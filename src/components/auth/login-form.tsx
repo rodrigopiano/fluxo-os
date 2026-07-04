@@ -1,0 +1,54 @@
+"use client";
+
+import { useActionState } from "react";
+import Link from "next/link";
+import { signInAction, type AuthState } from "@/lib/actions/auth";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+
+const initialState: AuthState = { error: null };
+
+export function LoginForm() {
+  const [state, action, pending] = useActionState(signInAction, initialState);
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Bom te ver de novo</CardTitle>
+        <CardDescription>Entre para ver como está seu dinheiro hoje.</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <form action={action} className="flex flex-col gap-4">
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="email">E-mail</Label>
+            <Input id="email" name="email" type="email" required autoComplete="email" />
+          </div>
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="password">Senha</Label>
+            <Input
+              id="password"
+              name="password"
+              type="password"
+              required
+              autoComplete="current-password"
+            />
+          </div>
+          {state.error ? (
+            <p className="text-sm text-destructive">{state.error}</p>
+          ) : null}
+          <Button type="submit" disabled={pending} className="mt-2">
+            {pending ? "Entrando..." : "Entrar"}
+          </Button>
+        </form>
+        <p className="mt-6 text-center text-sm text-muted-foreground">
+          Ainda não tem conta?{" "}
+          <Link href="/signup" className="font-medium text-foreground underline underline-offset-4">
+            Criar conta
+          </Link>
+        </p>
+      </CardContent>
+    </Card>
+  );
+}
