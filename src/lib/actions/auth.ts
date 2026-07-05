@@ -80,6 +80,23 @@ export async function signOutAction() {
   redirect("/login");
 }
 
+export async function signInWithGoogleAction() {
+  const headersList = await headers();
+  const origin = headersList.get("origin") ?? `https://${headersList.get("host")}`;
+
+  const supabase = await createClient();
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: "google",
+    options: { redirectTo: `${origin}/auth/callback?next=/dashboard` },
+  });
+
+  if (error || !data.url) {
+    redirect("/login?error=google");
+  }
+
+  redirect(data.url);
+}
+
 export async function requestPasswordResetAction(
   _prevState: AuthState,
   formData: FormData,
