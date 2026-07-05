@@ -4,12 +4,13 @@ import { computeAccountBalances, computeMonthSummary } from "@/lib/balances";
 import { daysRemainingInMonth, monthRange, nowInBrazil } from "@/lib/format";
 import { totalAssetsValue } from "@/lib/net-worth";
 import { SummaryCards } from "@/components/dashboard/summary-cards";
-import { ComingSoonCards } from "@/components/dashboard/coming-soon-cards";
 import { UpcomingBillsCard } from "@/components/dashboard/upcoming-bills-card";
 import { NetWorthCard } from "@/components/dashboard/net-worth-card";
+import { EmergencyReserveCard } from "@/components/dashboard/emergency-reserve-card";
+import { GoalsSummaryCard } from "@/components/dashboard/goals-summary-card";
 import { TransactionList } from "@/components/lancamentos/transaction-list";
 import { QuickAddButton } from "@/components/quick-add-button";
-import type { Account, Asset, Bill, Transaction } from "@/lib/types";
+import type { Account, Asset, Bill, Goal, Transaction } from "@/lib/types";
 
 function greeting() {
   const hour = nowInBrazil().getHours();
@@ -24,29 +25,39 @@ export default async function DashboardPage() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const [{ data: profile }, { data: accounts }, { data: transactions }, { data: bills }, { data: assets }] =
-    await Promise.all([
-      supabase.from("profiles").select("full_name").eq("id", user!.id).single(),
-      supabase.from("accounts").select("*").eq("user_id", user!.id),
-      supabase
-        .from("transactions")
-        .select("*")
-        .eq("user_id", user!.id)
-        .order("occurred_on", { ascending: false })
-        .order("created_at", { ascending: false }),
-      supabase
-        .from("bills")
-        .select("*")
-        .eq("user_id", user!.id)
-        .eq("direction", "pagar")
-        .eq("status", "pendente"),
-      supabase.from("assets").select("*").eq("user_id", user!.id),
-    ]);
+  const [
+    { data: profile },
+    { data: accounts },
+    { data: transactions },
+    { data: bills },
+    { data: assets },
+    { data: goals },
+  ] = await Promise.all([
+    supabase.from("profiles").select("full_name").eq("id", user!.id).single(),
+    supabase.from("accounts").select("*").eq("user_id", user!.id),
+    supabase
+      .from("transactions")
+      .select("*")
+      .eq("user_id", user!.id)
+      .order("occurred_on", { ascending: false })
+      .order("created_at", { ascending: false }),
+    supabase
+      .from("bills")
+      .select("*")
+      .eq("user_id", user!.id)
+      .eq("direction", "pagar")
+      .eq("status", "pendente"),
+    supabase.from("assets").select("*").eq("user_id", user!.id),
+    supabase.from("goals").select("*").eq("user_id", user!.id),
+  ]);
 
   const accountList = (accounts ?? []) as Account[];
   const transactionList = (transactions ?? []) as Transaction[];
   const billList = (bills ?? []) as Bill[];
   const assetList = (assets ?? []) as Asset[];
+  const goalList = (goals ?? []) as Goal[];
+  const emergencyGoal = goalList.find((g) => g.is_emergency_reserve);
+  const otherGoals = goalList.filter((g) => !g.is_emergency_reserve);
   const firstName = (profile?.full_name || user?.email || "").split(" ")[0];
 
   const balances = computeAccountBalances(accountList, transactionList);
@@ -82,7 +93,8 @@ export default async function DashboardPage() {
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <UpcomingBillsCard bills={billList} />
         <NetWorthCard netWorth={totalBalance + totalAssetsValue(assetList)} />
-        <ComingSoonCards />
+        <EmergencyReserveCard goal={emergencyGoal} />
+        <GoalsSummaryCard goals={otherGoals} />
       </div>
 
       <div>

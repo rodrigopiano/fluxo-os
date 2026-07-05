@@ -112,6 +112,16 @@ export const ASSET_CATEGORY_LABELS: Record<AssetCategory, string> = {
   outro: "Outro",
 };
 
+export type Goal = {
+  id: string;
+  user_id: string;
+  name: string;
+  target_amount: number;
+  current_amount: number;
+  is_emergency_reserve: boolean;
+  created_at: string;
+};
+
 export const INSTITUTIONS = [
   "Banco do Brasil",
   "Inter",
