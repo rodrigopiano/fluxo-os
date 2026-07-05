@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 
-export type AuthState = { error: string | null };
+export type AuthState = { error: string | null; info?: string | null };
 
 export async function signInAction(
   _prevState: AuthState,
@@ -16,6 +16,9 @@ export async function signInAction(
   const { error } = await supabase.auth.signInWithPassword({ email, password });
 
   if (error) {
+    if (error.message.toLowerCase().includes("email not confirmed")) {
+      return { error: "Confirme seu e-mail antes de entrar. Verifique sua caixa de entrada." };
+    }
     return { error: "E-mail ou senha incorretos." };
   }
 
@@ -35,7 +38,7 @@ export async function signUpAction(
   }
 
   const supabase = await createClient();
-  const { error } = await supabase.auth.signUp({
+  const { data, error } = await supabase.auth.signUp({
     email,
     password,
     options: { data: { full_name: fullName } },
@@ -43,6 +46,13 @@ export async function signUpAction(
 
   if (error) {
     return { error: "Não foi possível criar sua conta. Tente outro e-mail." };
+  }
+
+  if (!data.session) {
+    return {
+      error: null,
+      info: "Conta criada! Confirme seu e-mail para poder entrar.",
+    };
   }
 
   redirect("/dashboard");

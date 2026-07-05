@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { computeAccountBalances, computeMonthSummary } from "@/lib/balances";
-import { daysRemainingInMonth, monthRange } from "@/lib/format";
+import { daysRemainingInMonth, monthRange, nowInBrazil } from "@/lib/format";
 import { SummaryCards } from "@/components/dashboard/summary-cards";
 import { ComingSoonCards } from "@/components/dashboard/coming-soon-cards";
 import { TransactionList } from "@/components/lancamentos/transaction-list";
@@ -9,7 +9,7 @@ import { QuickAddButton } from "@/components/quick-add-button";
 import type { Account, Transaction } from "@/lib/types";
 
 function greeting() {
-  const hour = new Date().getHours();
+  const hour = nowInBrazil().getHours();
   if (hour < 12) return "Bom dia";
   if (hour < 18) return "Boa tarde";
   return "Boa noite";

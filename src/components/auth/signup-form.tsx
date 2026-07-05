@@ -43,6 +43,9 @@ export function SignupForm() {
           {state.error ? (
             <p className="text-sm text-destructive">{state.error}</p>
           ) : null}
+          {state.info ? (
+            <p className="text-sm text-emerald-500">{state.info}</p>
+          ) : null}
           <Button type="submit" disabled={pending} className="mt-2">
             {pending ? "Criando conta..." : "Criar conta"}
           </Button>

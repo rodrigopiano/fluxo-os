@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { Plus, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import { upsertAccountAction, type FormState } from "@/lib/actions/accounts";
@@ -30,21 +30,20 @@ const initialState: FormState = { error: null };
 export function AccountFormDialog({ account }: { account?: Account }) {
   const [open, setOpen] = useState(false);
   const [color, setColor] = useState(account?.color ?? PRESET_COLORS[0]);
-  const [state, action, pending] = useActionState(upsertAccountAction, initialState);
-  const wasPending = useRef(false);
+  const [pending, setPending] = useState(false);
   const isEdit = Boolean(account);
 
-  useEffect(() => {
-    if (wasPending.current && !pending) {
-      if (state.error) {
-        toast.error(state.error);
-      } else {
-        setOpen(false);
-        toast.success(isEdit ? "Conta atualizada." : "Conta criada.");
-      }
+  async function handleSubmit(formData: FormData) {
+    setPending(true);
+    const result = await upsertAccountAction(initialState, formData);
+    setPending(false);
+    if (result.error) {
+      toast.error(result.error);
+    } else {
+      setOpen(false);
+      toast.success(isEdit ? "Conta atualizada." : "Conta criada.");
     }
-    wasPending.current = pending;
-  }, [pending, state, isEdit]);
+  }
 
   return (
     <Dialog
@@ -70,7 +69,7 @@ export function AccountFormDialog({ account }: { account?: Account }) {
         <DialogHeader>
           <DialogTitle>{isEdit ? "Editar conta" : "Nova conta"}</DialogTitle>
         </DialogHeader>
-        <form action={action} className="flex flex-col gap-4">
+        <form action={handleSubmit} className="flex flex-col gap-4">
           {account ? <input type="hidden" name="id" value={account.id} /> : null}
           <input type="hidden" name="color" value={color} />
 

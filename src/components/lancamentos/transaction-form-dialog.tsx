@@ -1,9 +1,10 @@
 "use client";
 
-import { useActionState, useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
 import { upsertTransactionAction, type FormState } from "@/lib/actions/transactions";
+import { toLocalISODate } from "@/lib/format";
 import { CATEGORIES, type Account, type Transaction, type TransactionType } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,10 +28,6 @@ import {
 
 const initialState: FormState = { error: null };
 
-function todayISO() {
-  return new Date().toISOString().slice(0, 10);
-}
-
 export function TransactionFormDialog({
   accounts,
   transaction,
@@ -42,21 +39,20 @@ export function TransactionFormDialog({
 }) {
   const [open, setOpen] = useState(false);
   const [type, setType] = useState<TransactionType>(transaction?.type ?? "despesa");
-  const [state, action, pending] = useActionState(upsertTransactionAction, initialState);
-  const wasPending = useRef(false);
+  const [pending, setPending] = useState(false);
   const isEdit = Boolean(transaction);
 
-  useEffect(() => {
-    if (wasPending.current && !pending) {
-      if (state.error) {
-        toast.error(state.error);
-      } else {
-        setOpen(false);
-        toast.success(isEdit ? "Lançamento atualizado." : "Lançamento adicionado.");
-      }
+  async function handleSubmit(formData: FormData) {
+    setPending(true);
+    const result = await upsertTransactionAction(initialState, formData);
+    setPending(false);
+    if (result.error) {
+      toast.error(result.error);
+    } else {
+      setOpen(false);
+      toast.success(isEdit ? "Lançamento atualizado." : "Lançamento adicionado.");
     }
-    wasPending.current = pending;
-  }, [pending, state, isEdit]);
+  }
 
   const activeAccounts = accounts.filter((a) => a.is_active);
   const categories = type === "transferencia" ? [] : CATEGORIES[type];
@@ -81,7 +77,7 @@ export function TransactionFormDialog({
         <DialogHeader>
           <DialogTitle>{isEdit ? "Editar lançamento" : "Novo lançamento"}</DialogTitle>
         </DialogHeader>
-        <form action={action} className="flex flex-col gap-4">
+        <form action={handleSubmit} className="flex flex-col gap-4">
           {transaction ? <input type="hidden" name="id" value={transaction.id} /> : null}
           <input type="hidden" name="type" value={type} />
 
@@ -174,7 +170,7 @@ export function TransactionFormDialog({
               id="occurredOn"
               name="occurredOn"
               type="date"
-              defaultValue={transaction?.occurred_on ?? todayISO()}
+              defaultValue={transaction?.occurred_on ?? toLocalISODate(new Date())}
               required
             />
           </div>
