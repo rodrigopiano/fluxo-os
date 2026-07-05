@@ -25,8 +25,11 @@ export const PRIMARY_NAV: NavItem[] = [
   { href: "/contas", label: "Contas", icon: Wallet },
 ];
 
+export const SECONDARY_NAV: NavItem[] = [
+  { href: "/cartoes", label: "Cartões", icon: CreditCard },
+];
+
 export const COMING_SOON_NAV: NavItem[] = [
-  { href: "#", label: "Cartões", icon: CreditCard, comingSoon: true },
   { href: "#", label: "Contas a pagar", icon: Receipt, comingSoon: true },
   { href: "#", label: "Contas a receber", icon: HandCoins, comingSoon: true },
   { href: "#", label: "Patrimônio", icon: TrendingUp, comingSoon: true },

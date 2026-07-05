@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
-import { PRIMARY_NAV, COMING_SOON_NAV } from "@/components/nav/nav-items";
+import { PRIMARY_NAV, SECONDARY_NAV, COMING_SOON_NAV } from "@/components/nav/nav-items";
 import { Menu, LogOut } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
@@ -45,6 +45,17 @@ export function BottomNav() {
             <SheetTitle>Mais módulos</SheetTitle>
           </SheetHeader>
           <div className="flex flex-col gap-1 px-4">
+            {SECONDARY_NAV.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                onClick={() => setOpen(false)}
+                className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-foreground hover:bg-accent"
+              >
+                <item.icon className="size-4" />
+                {item.label}
+              </Link>
+            ))}
             {COMING_SOON_NAV.map((item) => (
               <div
                 key={item.label}

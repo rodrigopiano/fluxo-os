@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { PRIMARY_NAV, COMING_SOON_NAV } from "@/components/nav/nav-items";
+import { PRIMARY_NAV, SECONDARY_NAV, COMING_SOON_NAV } from "@/components/nav/nav-items";
 import { Button } from "@/components/ui/button";
 import { LogOut } from "lucide-react";
 import { signOutAction } from "@/lib/actions/auth";
@@ -34,6 +34,29 @@ export function Sidebar({ fullName }: { fullName: string }) {
             </Link>
           );
         })}
+
+        {SECONDARY_NAV.length > 0 ? (
+          <div className="mt-2 flex flex-col gap-1 border-t border-border pt-2">
+            {SECONDARY_NAV.map((item) => {
+              const active = pathname.startsWith(item.href);
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={cn(
+                    "flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition-colors",
+                    active
+                      ? "bg-primary text-primary-foreground"
+                      : "text-muted-foreground hover:bg-accent hover:text-foreground",
+                  )}
+                >
+                  <item.icon className="size-4" />
+                  {item.label}
+                </Link>
+              );
+            })}
+          </div>
+        ) : null}
 
         <p className="mt-6 px-3 text-xs font-medium uppercase tracking-wider text-muted-foreground/60">
           Em breve
