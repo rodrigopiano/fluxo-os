@@ -46,7 +46,8 @@ export async function signUpAction(
   });
 
   if (error) {
-    return { error: "Não foi possível criar sua conta. Tente outro e-mail." };
+    // TODO: temporary — revert to a generic message once the real cause is diagnosed.
+    return { error: `Não foi possível criar sua conta: ${error.message}` };
   }
 
   if (!data.session) {
