@@ -1,8 +1,7 @@
-import { TrendingUp, ShieldCheck, Target } from "lucide-react";
+import { ShieldCheck, Target } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 
 const CARDS = [
-  { icon: TrendingUp, label: "Evolução do patrimônio" },
   { icon: ShieldCheck, label: "Reserva de emergência" },
   { icon: Target, label: "Objetivos financeiros" },
 ];

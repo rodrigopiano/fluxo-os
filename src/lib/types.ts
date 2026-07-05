@@ -91,6 +91,27 @@ export const BILL_CATEGORIES: Record<BillDirection, string[]> = {
   receber: ["Comissão", "Salário", "Freela", "Cliente", "Aluguel", "Dividendos", "Outros"],
 };
 
+export type AssetCategory = "investimento" | "imovel" | "veiculo" | "consorcio" | "empresa" | "outro";
+
+export type Asset = {
+  id: string;
+  user_id: string;
+  category: AssetCategory;
+  name: string;
+  current_value: number;
+  notes: string | null;
+  created_at: string;
+};
+
+export const ASSET_CATEGORY_LABELS: Record<AssetCategory, string> = {
+  investimento: "Investimento",
+  imovel: "Imóvel",
+  veiculo: "Veículo",
+  consorcio: "Consórcio",
+  empresa: "Empresa",
+  outro: "Outro",
+};
+
 export const INSTITUTIONS = [
   "Banco do Brasil",
   "Inter",

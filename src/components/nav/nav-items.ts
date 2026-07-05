@@ -29,10 +29,10 @@ export const SECONDARY_NAV: NavItem[] = [
   { href: "/cartoes", label: "Cartões", icon: CreditCard },
   { href: "/contas-a-pagar", label: "Contas a pagar", icon: Receipt },
   { href: "/contas-a-receber", label: "Contas a receber", icon: HandCoins },
+  { href: "/patrimonio", label: "Patrimônio", icon: TrendingUp },
 ];
 
 export const COMING_SOON_NAV: NavItem[] = [
-  { href: "#", label: "Patrimônio", icon: TrendingUp, comingSoon: true },
   { href: "#", label: "Metas", icon: Target, comingSoon: true },
   { href: "#", label: "Consultora IA", icon: Sparkles, comingSoon: true },
   { href: "#", label: "Configurações", icon: Settings, comingSoon: true },

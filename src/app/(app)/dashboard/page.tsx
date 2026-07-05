@@ -2,12 +2,14 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { computeAccountBalances, computeMonthSummary } from "@/lib/balances";
 import { daysRemainingInMonth, monthRange, nowInBrazil } from "@/lib/format";
+import { totalAssetsValue } from "@/lib/net-worth";
 import { SummaryCards } from "@/components/dashboard/summary-cards";
 import { ComingSoonCards } from "@/components/dashboard/coming-soon-cards";
 import { UpcomingBillsCard } from "@/components/dashboard/upcoming-bills-card";
+import { NetWorthCard } from "@/components/dashboard/net-worth-card";
 import { TransactionList } from "@/components/lancamentos/transaction-list";
 import { QuickAddButton } from "@/components/quick-add-button";
-import type { Account, Bill, Transaction } from "@/lib/types";
+import type { Account, Asset, Bill, Transaction } from "@/lib/types";
 
 function greeting() {
   const hour = nowInBrazil().getHours();
@@ -22,7 +24,7 @@ export default async function DashboardPage() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const [{ data: profile }, { data: accounts }, { data: transactions }, { data: bills }] =
+  const [{ data: profile }, { data: accounts }, { data: transactions }, { data: bills }, { data: assets }] =
     await Promise.all([
       supabase.from("profiles").select("full_name").eq("id", user!.id).single(),
       supabase.from("accounts").select("*").eq("user_id", user!.id),
@@ -38,11 +40,13 @@ export default async function DashboardPage() {
         .eq("user_id", user!.id)
         .eq("direction", "pagar")
         .eq("status", "pendente"),
+      supabase.from("assets").select("*").eq("user_id", user!.id),
     ]);
 
   const accountList = (accounts ?? []) as Account[];
   const transactionList = (transactions ?? []) as Transaction[];
   const billList = (bills ?? []) as Bill[];
+  const assetList = (assets ?? []) as Asset[];
   const firstName = (profile?.full_name || user?.email || "").split(" ")[0];
 
   const balances = computeAccountBalances(accountList, transactionList);
@@ -77,6 +81,7 @@ export default async function DashboardPage() {
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <UpcomingBillsCard bills={billList} />
+        <NetWorthCard netWorth={totalBalance + totalAssetsValue(assetList)} />
         <ComingSoonCards />
       </div>
 
