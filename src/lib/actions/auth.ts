@@ -6,12 +6,24 @@ import { createClient } from "@/lib/supabase/server";
 
 export type AuthState = { error: string | null; info?: string | null };
 
+const INVALID_PASSWORD_MESSAGE =
+  "Sua senha contém um caractere não suportado (comum ao colar de um app de notas com marcador de lista, tipo \"• senha\"). Digite a senha novamente sem colar.";
+
+/** Supabase's auth API rejects passwords with characters outside Latin-1 (code point > 255). */
+function hasUnsupportedPasswordCharacters(password: string): boolean {
+  return Array.from(password).some((char) => char.codePointAt(0)! > 255);
+}
+
 export async function signInAction(
   _prevState: AuthState,
   formData: FormData,
 ): Promise<AuthState> {
   const email = String(formData.get("email") ?? "");
   const password = String(formData.get("password") ?? "");
+
+  if (hasUnsupportedPasswordCharacters(password)) {
+    return { error: INVALID_PASSWORD_MESSAGE };
+  }
 
   const supabase = await createClient();
   const { error } = await supabase.auth.signInWithPassword({ email, password });
@@ -37,6 +49,9 @@ export async function signUpAction(
   if (password.length < 6) {
     return { error: "A senha precisa ter pelo menos 6 caracteres." };
   }
+  if (hasUnsupportedPasswordCharacters(password)) {
+    return { error: INVALID_PASSWORD_MESSAGE };
+  }
 
   const supabase = await createClient();
   const { data, error } = await supabase.auth.signUp({
@@ -46,8 +61,7 @@ export async function signUpAction(
   });
 
   if (error) {
-    // TODO: temporary — revert to a generic message once the real cause is diagnosed.
-    return { error: `Não foi possível criar sua conta: ${error.message}` };
+    return { error: "Não foi possível criar sua conta. Tente outro e-mail." };
   }
 
   if (!data.session) {
@@ -93,6 +107,9 @@ export async function updatePasswordAction(
 
   if (password.length < 6) {
     return { error: "A senha precisa ter pelo menos 6 caracteres." };
+  }
+  if (hasUnsupportedPasswordCharacters(password)) {
+    return { error: INVALID_PASSWORD_MESSAGE };
   }
 
   const supabase = await createClient();
