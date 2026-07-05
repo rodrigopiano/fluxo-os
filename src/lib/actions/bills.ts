@@ -54,7 +54,72 @@ export async function upsertBillAction(
   return { error: null };
 }
 
-export async function toggleBillPaidAction(formData: FormData) {
+export async function markBillPaidAction(
+  _prevState: FormState,
+  formData: FormData,
+): Promise<FormState> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Sessão expirada. Faça login novamente." };
+
+  const id = formData.get("id")?.toString();
+  const direction = formData.get("direction")?.toString() as BillDirection;
+  const accountId = formData.get("accountId")?.toString();
+  if (!id || !direction) return { error: "Conta inválida." };
+  if (!accountId) return { error: "Selecione a conta usada." };
+
+  const { data: bill, error: fetchError } = await supabase
+    .from("bills")
+    .select("*")
+    .eq("id", id)
+    .eq("user_id", user.id)
+    .single();
+
+  if (fetchError || !bill) return { error: "Não foi possível encontrar a conta." };
+
+  const paidOn = toLocalISODate(new Date());
+
+  const { data: transaction, error: transactionError } = await supabase
+    .from("transactions")
+    .insert({
+      user_id: user.id,
+      account_id: accountId,
+      type: direction === "pagar" ? "despesa" : "receita",
+      amount: bill.amount,
+      category: bill.category,
+      description: bill.description,
+      occurred_on: paidOn,
+    })
+    .select("id")
+    .single();
+
+  if (transactionError || !transaction) {
+    return { error: "Não foi possível lançar a movimentação na conta." };
+  }
+
+  const { error: updateError } = await supabase
+    .from("bills")
+    .update({
+      status: "pago",
+      paid_on: paidOn,
+      account_id: accountId,
+      transaction_id: transaction.id,
+    })
+    .eq("id", id)
+    .eq("user_id", user.id);
+
+  if (updateError) return { error: "Não foi possível marcar como paga." };
+
+  revalidatePath(pathFor(direction));
+  revalidatePath("/dashboard");
+  revalidatePath("/contas");
+  revalidatePath("/lancamentos");
+  return { error: null };
+}
+
+export async function markBillPendingAction(formData: FormData) {
   const supabase = await createClient();
   const {
     data: { user },
@@ -63,20 +128,23 @@ export async function toggleBillPaidAction(formData: FormData) {
 
   const id = formData.get("id")?.toString();
   const direction = formData.get("direction")?.toString() as BillDirection;
-  const isPaid = formData.get("isPaid") === "true";
+  const transactionId = formData.get("transactionId")?.toString() || null;
   if (!id) return;
+
+  if (transactionId) {
+    await supabase.from("transactions").delete().eq("id", transactionId).eq("user_id", user.id);
+  }
 
   await supabase
     .from("bills")
-    .update({
-      status: isPaid ? "pendente" : "pago",
-      paid_on: isPaid ? null : toLocalISODate(new Date()),
-    })
+    .update({ status: "pendente", paid_on: null, account_id: null, transaction_id: null })
     .eq("id", id)
     .eq("user_id", user.id);
 
   revalidatePath(pathFor(direction));
   revalidatePath("/dashboard");
+  revalidatePath("/contas");
+  revalidatePath("/lancamentos");
 }
 
 export async function deleteBillAction(formData: FormData) {
@@ -88,10 +156,17 @@ export async function deleteBillAction(formData: FormData) {
 
   const id = formData.get("id")?.toString();
   const direction = formData.get("direction")?.toString() as BillDirection;
+  const transactionId = formData.get("transactionId")?.toString() || null;
   if (!id) return;
+
+  if (transactionId) {
+    await supabase.from("transactions").delete().eq("id", transactionId).eq("user_id", user.id);
+  }
 
   await supabase.from("bills").delete().eq("id", id).eq("user_id", user.id);
 
   revalidatePath(pathFor(direction));
   revalidatePath("/dashboard");
+  revalidatePath("/contas");
+  revalidatePath("/lancamentos");
 }

@@ -74,6 +74,8 @@ export type Bill = {
   due_date: string;
   status: BillStatus;
   paid_on: string | null;
+  account_id: string | null;
+  transaction_id: string | null;
   created_at: string;
 };
 

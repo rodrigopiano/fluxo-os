@@ -1,18 +1,27 @@
 "use client";
 
 import { useState } from "react";
-import { Check, RotateCcw, Trash2 } from "lucide-react";
+import { RotateCcw, Trash2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { BILL_FILTERS, isOverdue, matchesFilter, type BillFilter } from "@/lib/bills";
-import { toggleBillPaidAction, deleteBillAction } from "@/lib/actions/bills";
+import { markBillPendingAction, deleteBillAction } from "@/lib/actions/bills";
 import { BillFormDialog } from "@/components/contas-a-pagar/bill-form-dialog";
-import type { Bill, BillDirection } from "@/lib/types";
+import { MarkPaidDialog } from "@/components/contas-a-pagar/mark-paid-dialog";
+import type { Account, Bill, BillDirection } from "@/lib/types";
 
-export function BillList({ bills, direction }: { bills: Bill[]; direction: BillDirection }) {
+export function BillList({
+  bills,
+  direction,
+  accounts,
+}: {
+  bills: Bill[];
+  direction: BillDirection;
+  accounts: Account[];
+}) {
   const [filter, setFilter] = useState<BillFilter>("todas");
   const filtered = bills.filter((b) => matchesFilter(b, filter));
 
@@ -54,17 +63,22 @@ export function BillList({ bills, direction }: { bills: Bill[]; direction: BillD
                   <p className="shrink-0 font-semibold">{formatCurrency(bill.amount)}</p>
                   <div className="flex shrink-0 items-center gap-1">
                     <BillFormDialog direction={direction} bill={bill} />
-                    <form action={toggleBillPaidAction}>
-                      <input type="hidden" name="id" value={bill.id} />
-                      <input type="hidden" name="direction" value={direction} />
-                      <input type="hidden" name="isPaid" value={String(paid)} />
-                      <Button variant="ghost" size="icon" className="size-8" type="submit">
-                        {paid ? <RotateCcw className="size-4" /> : <Check className="size-4" />}
-                      </Button>
-                    </form>
+                    {paid ? (
+                      <form action={markBillPendingAction}>
+                        <input type="hidden" name="id" value={bill.id} />
+                        <input type="hidden" name="direction" value={direction} />
+                        <input type="hidden" name="transactionId" value={bill.transaction_id ?? ""} />
+                        <Button variant="ghost" size="icon" className="size-8" type="submit">
+                          <RotateCcw className="size-4" />
+                        </Button>
+                      </form>
+                    ) : (
+                      <MarkPaidDialog bill={bill} direction={direction} accounts={accounts} />
+                    )}
                     <form action={deleteBillAction}>
                       <input type="hidden" name="id" value={bill.id} />
                       <input type="hidden" name="direction" value={direction} />
+                      <input type="hidden" name="transactionId" value={bill.transaction_id ?? ""} />
                       <Button variant="ghost" size="icon" className="size-8" type="submit">
                         <Trash2 className="size-4" />
                       </Button>
