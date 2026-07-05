@@ -4,9 +4,10 @@ import { computeAccountBalances, computeMonthSummary } from "@/lib/balances";
 import { daysRemainingInMonth, monthRange, nowInBrazil } from "@/lib/format";
 import { SummaryCards } from "@/components/dashboard/summary-cards";
 import { ComingSoonCards } from "@/components/dashboard/coming-soon-cards";
+import { UpcomingBillsCard } from "@/components/dashboard/upcoming-bills-card";
 import { TransactionList } from "@/components/lancamentos/transaction-list";
 import { QuickAddButton } from "@/components/quick-add-button";
-import type { Account, Transaction } from "@/lib/types";
+import type { Account, Bill, Transaction } from "@/lib/types";
 
 function greeting() {
   const hour = nowInBrazil().getHours();
@@ -21,19 +22,27 @@ export default async function DashboardPage() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const [{ data: profile }, { data: accounts }, { data: transactions }] = await Promise.all([
-    supabase.from("profiles").select("full_name").eq("id", user!.id).single(),
-    supabase.from("accounts").select("*").eq("user_id", user!.id),
-    supabase
-      .from("transactions")
-      .select("*")
-      .eq("user_id", user!.id)
-      .order("occurred_on", { ascending: false })
-      .order("created_at", { ascending: false }),
-  ]);
+  const [{ data: profile }, { data: accounts }, { data: transactions }, { data: bills }] =
+    await Promise.all([
+      supabase.from("profiles").select("full_name").eq("id", user!.id).single(),
+      supabase.from("accounts").select("*").eq("user_id", user!.id),
+      supabase
+        .from("transactions")
+        .select("*")
+        .eq("user_id", user!.id)
+        .order("occurred_on", { ascending: false })
+        .order("created_at", { ascending: false }),
+      supabase
+        .from("bills")
+        .select("*")
+        .eq("user_id", user!.id)
+        .eq("direction", "pagar")
+        .eq("status", "pendente"),
+    ]);
 
   const accountList = (accounts ?? []) as Account[];
   const transactionList = (transactions ?? []) as Transaction[];
+  const billList = (bills ?? []) as Bill[];
   const firstName = (profile?.full_name || user?.email || "").split(" ")[0];
 
   const balances = computeAccountBalances(accountList, transactionList);
@@ -66,7 +75,10 @@ export default async function DashboardPage() {
         monthSavings={monthSavings}
       />
 
-      <ComingSoonCards />
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <UpcomingBillsCard bills={billList} />
+        <ComingSoonCards />
+      </div>
 
       <div>
         <div className="mb-3 flex items-center justify-between">

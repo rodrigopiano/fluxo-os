@@ -61,6 +61,36 @@ export const CARD_PURCHASE_CATEGORIES = [
   "Outros",
 ];
 
+export type BillDirection = "pagar" | "receber";
+export type BillStatus = "pendente" | "pago";
+
+export type Bill = {
+  id: string;
+  user_id: string;
+  direction: BillDirection;
+  description: string;
+  category: string | null;
+  amount: number;
+  due_date: string;
+  status: BillStatus;
+  paid_on: string | null;
+  created_at: string;
+};
+
+export const BILL_CATEGORIES: Record<BillDirection, string[]> = {
+  pagar: [
+    "Água",
+    "Luz",
+    "Internet",
+    "Aluguel",
+    "Impostos",
+    "Assinaturas",
+    "Parcelamentos",
+    "Outros",
+  ],
+  receber: ["Comissão", "Salário", "Freela", "Cliente", "Aluguel", "Dividendos", "Outros"],
+};
+
 export const INSTITUTIONS = [
   "Banco do Brasil",
   "Inter",
