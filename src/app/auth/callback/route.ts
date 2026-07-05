@@ -12,7 +12,11 @@ export async function GET(request: Request) {
     if (!error) {
       return NextResponse.redirect(`${origin}${next}`);
     }
+    return NextResponse.redirect(`${origin}/login?error=${encodeURIComponent(error.message)}`);
   }
 
-  return NextResponse.redirect(`${origin}/login`);
+  const oauthError = searchParams.get("error_description") ?? searchParams.get("error");
+  return NextResponse.redirect(
+    `${origin}/login?error=${encodeURIComponent(oauthError ?? "Callback sem código de autorização.")}`,
+  );
 }

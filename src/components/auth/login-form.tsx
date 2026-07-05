@@ -1,7 +1,8 @@
 "use client";
 
-import { useActionState } from "react";
+import { Suspense, useActionState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { signInAction, type AuthState } from "@/lib/actions/auth";
 import { GoogleButton } from "@/components/auth/google-button";
 import { Button } from "@/components/ui/button";
@@ -10,6 +11,12 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 
 const initialState: AuthState = { error: null };
+
+function OAuthError() {
+  const error = useSearchParams().get("error");
+  if (!error) return null;
+  return <p className="mb-4 text-sm text-destructive">{error}</p>;
+}
 
 export function LoginForm() {
   const [state, action, pending] = useActionState(signInAction, initialState);
@@ -21,6 +28,9 @@ export function LoginForm() {
         <CardDescription>Entre para ver como está seu dinheiro hoje.</CardDescription>
       </CardHeader>
       <CardContent>
+        <Suspense fallback={null}>
+          <OAuthError />
+        </Suspense>
         <GoogleButton />
         <div className="my-4 flex items-center gap-3 text-xs text-muted-foreground">
           <span className="h-px flex-1 bg-border" />
