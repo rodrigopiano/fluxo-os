@@ -1,6 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 
 export type AuthState = { error: string | null; info?: string | null };
@@ -62,4 +63,43 @@ export async function signOutAction() {
   const supabase = await createClient();
   await supabase.auth.signOut();
   redirect("/login");
+}
+
+export async function requestPasswordResetAction(
+  _prevState: AuthState,
+  formData: FormData,
+): Promise<AuthState> {
+  const email = String(formData.get("email") ?? "");
+  const headersList = await headers();
+  const origin = headersList.get("origin") ?? `https://${headersList.get("host")}`;
+
+  const supabase = await createClient();
+  await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: `${origin}/auth/callback?next=/reset-password`,
+  });
+
+  return {
+    error: null,
+    info: "Se esse e-mail estiver cadastrado, enviamos um link para redefinir sua senha.",
+  };
+}
+
+export async function updatePasswordAction(
+  _prevState: AuthState,
+  formData: FormData,
+): Promise<AuthState> {
+  const password = String(formData.get("password") ?? "");
+
+  if (password.length < 6) {
+    return { error: "A senha precisa ter pelo menos 6 caracteres." };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase.auth.updateUser({ password });
+
+  if (error) {
+    return { error: "Não foi possível atualizar a senha. Peça um novo link e tente de novo." };
+  }
+
+  redirect("/dashboard");
 }

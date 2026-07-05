@@ -26,7 +26,15 @@ export function LoginForm() {
             <Input id="email" name="email" type="email" required autoComplete="email" />
           </div>
           <div className="flex flex-col gap-2">
-            <Label htmlFor="password">Senha</Label>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="password">Senha</Label>
+              <Link
+                href="/forgot-password"
+                className="text-xs text-muted-foreground underline underline-offset-4"
+              >
+                Esqueci minha senha
+              </Link>
+            </div>
             <Input
               id="password"
               name="password"
