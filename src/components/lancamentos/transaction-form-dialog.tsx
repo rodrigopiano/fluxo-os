@@ -5,7 +5,13 @@ import { Plus } from "lucide-react";
 import { toast } from "sonner";
 import { upsertTransactionAction, type FormState } from "@/lib/actions/transactions";
 import { toLocalISODate } from "@/lib/format";
-import { CATEGORIES, type Account, type Transaction, type TransactionType } from "@/lib/types";
+import {
+  CATEGORIES,
+  type Account,
+  type ExtractedReceipt,
+  type Transaction,
+  type TransactionType,
+} from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -32,13 +38,24 @@ export function TransactionFormDialog({
   accounts,
   transaction,
   trigger,
+  initialValues,
+  open: openProp,
+  onOpenChange: onOpenChangeProp,
 }: {
   accounts: Account[];
   transaction?: Transaction;
   trigger?: React.ReactNode;
+  initialValues?: ExtractedReceipt;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }) {
-  const [open, setOpen] = useState(false);
-  const [type, setType] = useState<TransactionType>(transaction?.type ?? "despesa");
+  const isControlled = openProp !== undefined;
+  const [internalOpen, setInternalOpen] = useState(false);
+  const open = isControlled ? openProp : internalOpen;
+  const setOpen = isControlled ? (onOpenChangeProp ?? (() => {})) : setInternalOpen;
+
+  const defaultType = transaction?.type ?? initialValues?.type ?? "despesa";
+  const [type, setType] = useState<TransactionType>(defaultType);
   const [pending, setPending] = useState(false);
   const isEdit = Boolean(transaction);
 
@@ -62,17 +79,19 @@ export function TransactionFormDialog({
       open={open}
       onOpenChange={(next) => {
         setOpen(next);
-        if (next) setType(transaction?.type ?? "despesa");
+        if (next) setType(defaultType);
       }}
     >
-      <DialogTrigger asChild>
-        {trigger ?? (
-          <Button className="gap-2">
-            <Plus className="size-4" />
-            Novo lançamento
-          </Button>
-        )}
-      </DialogTrigger>
+      {isControlled ? null : (
+        <DialogTrigger asChild>
+          {trigger ?? (
+            <Button className="gap-2">
+              <Plus className="size-4" />
+              Novo lançamento
+            </Button>
+          )}
+        </DialogTrigger>
+      )}
       <DialogContent>
         <DialogHeader>
           <DialogTitle>{isEdit ? "Editar lançamento" : "Novo lançamento"}</DialogTitle>
@@ -103,7 +122,7 @@ export function TransactionFormDialog({
               type="number"
               step="0.01"
               min="0.01"
-              defaultValue={transaction?.amount}
+              defaultValue={transaction?.amount ?? initialValues?.amount ?? undefined}
               required
               autoFocus
             />
@@ -148,7 +167,10 @@ export function TransactionFormDialog({
             ) : (
               <div className="flex flex-col gap-2">
                 <Label htmlFor="category">Categoria</Label>
-                <Select name="category" defaultValue={transaction?.category ?? undefined}>
+                <Select
+                  name="category"
+                  defaultValue={transaction?.category ?? initialValues?.category ?? undefined}
+                >
                   <SelectTrigger id="category" className="w-full">
                     <SelectValue placeholder="Selecione" />
                   </SelectTrigger>
@@ -170,7 +192,9 @@ export function TransactionFormDialog({
               id="occurredOn"
               name="occurredOn"
               type="date"
-              defaultValue={transaction?.occurred_on ?? toLocalISODate(new Date())}
+              defaultValue={
+                transaction?.occurred_on ?? initialValues?.occurredOn ?? toLocalISODate(new Date())
+              }
               required
             />
           </div>
@@ -180,7 +204,7 @@ export function TransactionFormDialog({
             <Textarea
               id="description"
               name="description"
-              defaultValue={transaction?.description ?? ""}
+              defaultValue={transaction?.description ?? initialValues?.description ?? ""}
               rows={2}
             />
           </div>

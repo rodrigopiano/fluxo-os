@@ -1,5 +1,13 @@
 export type TransactionType = "receita" | "despesa" | "transferencia";
 
+export type ExtractedReceipt = {
+  amount: number | null;
+  description: string | null;
+  category: string | null;
+  type: Exclude<TransactionType, "transferencia">;
+  occurredOn: string | null;
+};
+
 export type Account = {
   id: string;
   user_id: string;
