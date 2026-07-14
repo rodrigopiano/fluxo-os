@@ -27,9 +27,24 @@ export async function updateSession(request: NextRequest) {
     },
   );
 
-  const {
+  let {
     data: { user },
   } = await supabase.auth.getUser();
+
+  // No visible login screen for this single-user deployment: if there's no
+  // session, transparently sign in with a fixed account instead of bouncing
+  // to /login. Falls back to the normal login flow if that's misconfigured.
+  const autoEmail = process.env.AUTO_LOGIN_EMAIL;
+  const autoPassword = process.env.AUTO_LOGIN_PASSWORD;
+  if (!user && autoEmail && autoPassword) {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: autoEmail,
+      password: autoPassword,
+    });
+    if (!error) {
+      user = data.user;
+    }
+  }
 
   const { pathname } = request.nextUrl;
   const isPublicPath = PUBLIC_PATHS.some((path) => pathname.startsWith(path));
