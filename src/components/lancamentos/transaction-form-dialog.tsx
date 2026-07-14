@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
 import { upsertTransactionAction, type FormState } from "@/lib/actions/transactions";
-import { toLocalISODate } from "@/lib/format";
+import { accountLabel, toLocalISODate } from "@/lib/format";
 import {
   CATEGORIES,
   type Account,
@@ -138,7 +138,7 @@ export function TransactionFormDialog({
                 <SelectContent>
                   {activeAccounts.map((a) => (
                     <SelectItem key={a.id} value={a.id}>
-                      {a.name}
+                      {accountLabel(a)}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -158,7 +158,7 @@ export function TransactionFormDialog({
                   <SelectContent>
                     {activeAccounts.map((a) => (
                       <SelectItem key={a.id} value={a.id}>
-                        {a.name}
+                        {accountLabel(a)}
                       </SelectItem>
                     ))}
                   </SelectContent>

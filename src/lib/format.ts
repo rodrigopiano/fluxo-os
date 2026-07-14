@@ -7,6 +7,10 @@ export function formatCurrency(value: number): string {
   return currencyFormatter.format(value);
 }
 
+export function accountLabel(account: { institution: string; name: string }): string {
+  return `${account.institution} - ${account.name}`;
+}
+
 export function formatDate(value: string | Date): string {
   const date = typeof value === "string" ? new Date(`${value}T00:00:00`) : value;
   return new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "short" }).format(date);

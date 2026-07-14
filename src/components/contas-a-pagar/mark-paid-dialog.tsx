@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Check } from "lucide-react";
 import { toast } from "sonner";
 import { markBillPaidAction, type FormState } from "@/lib/actions/bills";
+import { accountLabel } from "@/lib/format";
 import type { Account, Bill, BillDirection } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import {
@@ -72,7 +73,7 @@ export function MarkPaidDialog({
             <SelectContent>
               {activeAccounts.map((account) => (
                 <SelectItem key={account.id} value={account.id}>
-                  {account.name}
+                  {accountLabel(account)}
                 </SelectItem>
               ))}
             </SelectContent>
