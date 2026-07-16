@@ -2,7 +2,7 @@
 
 import { CATEGORIES, type ExtractedReceipt } from "@/lib/types";
 
-export type ReceiptState = { error: string | null; data?: ExtractedReceipt };
+export type ReceiptState = { error: string | null; data?: ExtractedReceipt[] };
 
 const GEMINI_MODEL = "gemini-2.5-flash";
 
@@ -27,12 +27,15 @@ export async function extractReceiptAction(formData: FormData): Promise<ReceiptS
 
   const prompt =
     "Você extrai dados de comprovantes financeiros brasileiros (PIX, boleto, nota fiscal, recibo) a partir de uma imagem. " +
-    'Responda só com um objeto JSON com exatamente estas chaves: "valor" (número, sem símbolo de moeda), ' +
-    '"data" (formato YYYY-MM-DD, use o ano atual se não estiver visível), ' +
-    '"descricao" (nome do estabelecimento ou pessoa), ' +
-    `"categoria" (escolha exatamente uma destas opções: ${categories}), ` +
-    '"tipo" ("despesa" ou "receita", use "despesa" se não tiver certeza). ' +
-    "Se não conseguir identificar um campo, use null.";
+    "Se o comprovante tiver vários itens/produtos separados (ex: nota de supermercado), extraia CADA item como uma entrada " +
+    "separada, para o usuário poder categorizar cada um. Se for um único gasto/recebimento (ex: PIX, boleto, mensalidade), " +
+    "extraia como uma entrada só. " +
+    'Responda só com um objeto JSON com exatamente estas chaves: "data" (formato YYYY-MM-DD, use o ano atual se não ' +
+    'estiver visível, mesma data para todos os itens), "itens" (array de objetos, cada um com "valor" — número, sem ' +
+    'símbolo de moeda —, "descricao" — nome do produto, estabelecimento ou pessoa —, ' +
+    `"categoria" — escolha exatamente uma destas opções: ${categories} —, ` +
+    '"tipo" — "despesa" ou "receita", use "despesa" se não tiver certeza). ' +
+    "Se não conseguir identificar um campo, use null. Se não conseguir separar itens, retorne um array com uma única entrada.";
 
   let response: Response;
   try {
@@ -70,18 +73,29 @@ export async function extractReceiptAction(formData: FormData): Promise<ReceiptS
 
   try {
     const parsed = JSON.parse(content);
-    const type = parsed.tipo === "receita" ? "receita" : "despesa";
-    const category = CATEGORIES[type].includes(parsed.categoria) ? parsed.categoria : null;
+    const sharedDate = typeof parsed.data === "string" ? parsed.data : null;
+    const rawItems = Array.isArray(parsed.itens) ? parsed.itens : [];
 
-    const extracted: ExtractedReceipt = {
-      amount: typeof parsed.valor === "number" ? parsed.valor : null,
-      description: typeof parsed.descricao === "string" ? parsed.descricao : null,
-      category,
-      type,
-      occurredOn: typeof parsed.data === "string" ? parsed.data : null,
-    };
+    if (rawItems.length === 0) {
+      return { error: "Não encontrei nenhum item nesse comprovante. Tente outra foto." };
+    }
 
-    return { error: null, data: extracted };
+    const items: ExtractedReceipt[] = rawItems.map((item: Record<string, unknown>) => {
+      const type = item.tipo === "receita" ? "receita" : "despesa";
+      const category = CATEGORIES[type].includes(item.categoria as string)
+        ? (item.categoria as string)
+        : null;
+
+      return {
+        amount: typeof item.valor === "number" ? item.valor : null,
+        description: typeof item.descricao === "string" ? item.descricao : null,
+        category,
+        type,
+        occurredOn: sharedDate,
+      };
+    });
+
+    return { error: null, data: items };
   } catch {
     return { error: "Não entendi a resposta da IA. Tente de novo." };
   }

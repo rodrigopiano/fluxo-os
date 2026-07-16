@@ -19,7 +19,7 @@ import {
 export function ReceiptScanDialog({
   onExtracted,
 }: {
-  onExtracted: (data: ExtractedReceipt) => void;
+  onExtracted: (items: ExtractedReceipt[]) => void;
 }) {
   const [open, setOpen] = useState(false);
   const [pending, setPending] = useState(false);

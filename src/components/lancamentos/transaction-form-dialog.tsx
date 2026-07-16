@@ -39,15 +39,21 @@ export function TransactionFormDialog({
   transaction,
   trigger,
   initialValues,
+  defaultAccountId,
+  subtitle,
   open: openProp,
   onOpenChange: onOpenChangeProp,
+  onSaved,
 }: {
   accounts: Account[];
   transaction?: Transaction;
   trigger?: React.ReactNode;
   initialValues?: ExtractedReceipt;
+  defaultAccountId?: string;
+  subtitle?: string;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
+  onSaved?: (accountId?: string) => void;
 }) {
   const isControlled = openProp !== undefined;
   const [internalOpen, setInternalOpen] = useState(false);
@@ -65,9 +71,14 @@ export function TransactionFormDialog({
     setPending(false);
     if (result.error) {
       toast.error(result.error);
+      return;
+    }
+
+    toast.success(isEdit ? "Lançamento atualizado." : "Lançamento adicionado.");
+    if (onSaved) {
+      onSaved(formData.get("accountId")?.toString());
     } else {
       setOpen(false);
-      toast.success(isEdit ? "Lançamento atualizado." : "Lançamento adicionado.");
     }
   }
 
@@ -95,6 +106,7 @@ export function TransactionFormDialog({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>{isEdit ? "Editar lançamento" : "Novo lançamento"}</DialogTitle>
+          {subtitle ? <p className="text-sm text-muted-foreground">{subtitle}</p> : null}
         </DialogHeader>
         <form action={handleSubmit} className="flex flex-col gap-4">
           {transaction ? <input type="hidden" name="id" value={transaction.id} /> : null}
@@ -131,7 +143,7 @@ export function TransactionFormDialog({
           <div className="grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-2">
               <Label htmlFor="accountId">{type === "transferencia" ? "De" : "Conta"}</Label>
-              <Select name="accountId" defaultValue={transaction?.account_id}>
+              <Select name="accountId" defaultValue={transaction?.account_id ?? defaultAccountId}>
                 <SelectTrigger id="accountId" className="w-full">
                   <SelectValue placeholder="Selecione" />
                 </SelectTrigger>

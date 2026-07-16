@@ -6,23 +6,49 @@ import { TransactionFormDialog } from "@/components/lancamentos/transaction-form
 import type { Account, ExtractedReceipt } from "@/lib/types";
 
 export function ScanReceiptButton({ accounts }: { accounts: Account[] }) {
-  const [extracted, setExtracted] = useState<ExtractedReceipt | null>(null);
+  const [queue, setQueue] = useState<ExtractedReceipt[]>([]);
+  const [queueIndex, setQueueIndex] = useState(0);
   const [reviewOpen, setReviewOpen] = useState(false);
+  const [lastAccountId, setLastAccountId] = useState<string | undefined>();
+
+  const currentItem = queue[queueIndex];
+
+  function handleSaved(accountId?: string) {
+    if (accountId) setLastAccountId(accountId);
+    if (queueIndex + 1 < queue.length) {
+      setQueueIndex((i) => i + 1);
+    } else {
+      setQueue([]);
+      setQueueIndex(0);
+      setReviewOpen(false);
+    }
+  }
 
   return (
     <>
       <ReceiptScanDialog
-        onExtracted={(data) => {
-          setExtracted(data);
+        onExtracted={(items) => {
+          setQueue(items);
+          setQueueIndex(0);
           setReviewOpen(true);
         }}
       />
-      {extracted ? (
+      {currentItem ? (
         <TransactionFormDialog
+          key={queueIndex}
           accounts={accounts}
-          initialValues={extracted}
+          initialValues={currentItem}
+          defaultAccountId={lastAccountId}
+          subtitle={queue.length > 1 ? `Item ${queueIndex + 1} de ${queue.length}` : undefined}
           open={reviewOpen}
-          onOpenChange={setReviewOpen}
+          onOpenChange={(next) => {
+            setReviewOpen(next);
+            if (!next) {
+              setQueue([]);
+              setQueueIndex(0);
+            }
+          }}
+          onSaved={handleSaved}
         />
       ) : null}
     </>
