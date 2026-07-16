@@ -3,9 +3,9 @@
 import { useState } from "react";
 import { ReceiptScanDialog } from "@/components/lancamentos/receipt-scan-dialog";
 import { TransactionFormDialog } from "@/components/lancamentos/transaction-form-dialog";
-import type { Account, ExtractedReceipt } from "@/lib/types";
+import type { Account, Card, ExtractedReceipt } from "@/lib/types";
 
-export function ScanReceiptButton({ accounts }: { accounts: Account[] }) {
+export function ScanReceiptButton({ accounts, cards }: { accounts: Account[]; cards: Card[] }) {
   const [queue, setQueue] = useState<ExtractedReceipt[]>([]);
   const [queueIndex, setQueueIndex] = useState(0);
   const [reviewOpen, setReviewOpen] = useState(false);
@@ -37,6 +37,7 @@ export function ScanReceiptButton({ accounts }: { accounts: Account[] }) {
         <TransactionFormDialog
           key={queueIndex}
           accounts={accounts}
+          cards={cards}
           initialValues={currentItem}
           defaultAccountId={lastAccountId}
           subtitle={queue.length > 1 ? `Item ${queueIndex + 1} de ${queue.length}` : undefined}

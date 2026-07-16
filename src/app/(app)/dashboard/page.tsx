@@ -10,7 +10,7 @@ import { EmergencyReserveCard } from "@/components/dashboard/emergency-reserve-c
 import { GoalsSummaryCard } from "@/components/dashboard/goals-summary-card";
 import { TransactionList } from "@/components/lancamentos/transaction-list";
 import { QuickAddButton } from "@/components/quick-add-button";
-import type { Account, Asset, Bill, Goal, Transaction } from "@/lib/types";
+import type { Account, Asset, Bill, Card, Goal, Transaction } from "@/lib/types";
 
 function greeting() {
   const hour = nowInBrazil().getHours();
@@ -32,6 +32,7 @@ export default async function DashboardPage() {
     { data: bills },
     { data: assets },
     { data: goals },
+    { data: cards },
   ] = await Promise.all([
     supabase.from("profiles").select("full_name").eq("id", user!.id).single(),
     supabase.from("accounts").select("*").eq("user_id", user!.id),
@@ -49,6 +50,7 @@ export default async function DashboardPage() {
       .eq("status", "pendente"),
     supabase.from("assets").select("*").eq("user_id", user!.id),
     supabase.from("goals").select("*").eq("user_id", user!.id),
+    supabase.from("cards").select("*").eq("user_id", user!.id),
   ]);
 
   const accountList = (accounts ?? []) as Account[];
@@ -56,6 +58,7 @@ export default async function DashboardPage() {
   const billList = (bills ?? []) as Bill[];
   const assetList = (assets ?? []) as Asset[];
   const goalList = (goals ?? []) as Goal[];
+  const cardList = (cards ?? []) as Card[];
   const emergencyGoal = goalList.find((g) => g.is_emergency_reserve);
   const otherGoals = goalList.filter((g) => !g.is_emergency_reserve);
   const firstName = (profile?.full_name || user?.email || "").split(" ")[0];
@@ -104,10 +107,14 @@ export default async function DashboardPage() {
             Ver todos
           </Link>
         </div>
-        <TransactionList transactions={transactionList.slice(0, 5)} accounts={accountList} />
+        <TransactionList
+          transactions={transactionList.slice(0, 5)}
+          accounts={accountList}
+          cards={cardList}
+        />
       </div>
 
-      <QuickAddButton accounts={accountList} />
+      <QuickAddButton accounts={accountList} cards={cardList} />
     </div>
   );
 }

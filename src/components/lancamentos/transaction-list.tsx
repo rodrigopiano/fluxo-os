@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { deleteTransactionAction } from "@/lib/actions/transactions";
 import { TransactionFormDialog } from "@/components/lancamentos/transaction-form-dialog";
-import type { Account, Transaction } from "@/lib/types";
+import type { Account, Card as CreditCard, Transaction } from "@/lib/types";
 
 const TYPE_META = {
   receita: { icon: ArrowUpCircle, color: "text-emerald-500", sign: "+" },
@@ -15,9 +15,11 @@ const TYPE_META = {
 export function TransactionList({
   transactions,
   accounts,
+  cards,
 }: {
   transactions: Transaction[];
   accounts: Account[];
+  cards: CreditCard[];
 }) {
   const accountById = new Map(accounts.map((a) => [a.id, a]));
 
@@ -59,6 +61,7 @@ export function TransactionList({
               <div className="flex shrink-0 items-center gap-1">
                 <TransactionFormDialog
                   accounts={accounts}
+                  cards={cards}
                   transaction={tx}
                   trigger={
                     <Button variant="ghost" size="sm">

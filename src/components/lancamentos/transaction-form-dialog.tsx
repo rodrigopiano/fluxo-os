@@ -4,10 +4,12 @@ import { useState } from "react";
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
 import { upsertTransactionAction, type FormState } from "@/lib/actions/transactions";
+import { upsertCardPurchaseAction, type FormState as CardFormState } from "@/lib/actions/cards";
 import { accountLabel, toLocalISODate } from "@/lib/format";
 import {
   CATEGORIES,
   type Account,
+  type Card as CreditCard,
   type ExtractedReceipt,
   type Transaction,
   type TransactionType,
@@ -33,9 +35,13 @@ import {
 } from "@/components/ui/dialog";
 
 const initialState: FormState = { error: null };
+const cardInitialState: CardFormState = { error: null };
+
+type PaymentMethod = "debito" | "credito";
 
 export function TransactionFormDialog({
   accounts,
+  cards,
   transaction,
   trigger,
   initialValues,
@@ -46,6 +52,7 @@ export function TransactionFormDialog({
   onSaved,
 }: {
   accounts: Account[];
+  cards: CreditCard[];
   transaction?: Transaction;
   trigger?: React.ReactNode;
   initialValues?: ExtractedReceipt;
@@ -62,11 +69,27 @@ export function TransactionFormDialog({
 
   const defaultType = transaction?.type ?? initialValues?.type ?? "despesa";
   const [type, setType] = useState<TransactionType>(defaultType);
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("debito");
   const [pending, setPending] = useState(false);
   const isEdit = Boolean(transaction);
+  const isCreditPurchase = !isEdit && type === "despesa" && paymentMethod === "credito";
 
   async function handleSubmit(formData: FormData) {
     setPending(true);
+
+    if (isCreditPurchase) {
+      const result = await upsertCardPurchaseAction(cardInitialState, formData);
+      setPending(false);
+      if (result.error) {
+        toast.error(result.error);
+        return;
+      }
+      toast.success("Compra lançada no cartão.");
+      if (onSaved) onSaved();
+      else setOpen(false);
+      return;
+    }
+
     const result = await upsertTransactionAction(initialState, formData);
     setPending(false);
     if (result.error) {
@@ -83,14 +106,19 @@ export function TransactionFormDialog({
   }
 
   const activeAccounts = accounts.filter((a) => a.is_active);
+  const activeCards = cards.filter((c) => c.is_active);
   const categories = type === "transferencia" ? [] : CATEGORIES[type];
+  const noOptionsAvailable = isCreditPurchase ? activeCards.length === 0 : activeAccounts.length === 0;
 
   return (
     <Dialog
       open={open}
       onOpenChange={(next) => {
         setOpen(next);
-        if (next) setType(defaultType);
+        if (next) {
+          setType(defaultType);
+          setPaymentMethod("debito");
+        }
       }}
     >
       {isControlled ? null : (
@@ -126,6 +154,19 @@ export function TransactionFormDialog({
             </TabsList>
           </Tabs>
 
+          {!isEdit && type === "despesa" ? (
+            <Tabs value={paymentMethod} onValueChange={(v) => setPaymentMethod(v as PaymentMethod)}>
+              <TabsList className="w-full">
+                <TabsTrigger value="debito" className="flex-1">
+                  Débito
+                </TabsTrigger>
+                <TabsTrigger value="credito" className="flex-1">
+                  Crédito
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
+          ) : null}
+
           <div className="flex flex-col gap-2">
             <Label htmlFor="amount">Valor</Label>
             <Input
@@ -141,21 +182,39 @@ export function TransactionFormDialog({
           </div>
 
           <div className="grid grid-cols-2 gap-3">
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="accountId">{type === "transferencia" ? "De" : "Conta"}</Label>
-              <Select name="accountId" defaultValue={transaction?.account_id ?? defaultAccountId}>
-                <SelectTrigger id="accountId" className="w-full">
-                  <SelectValue placeholder="Selecione" />
-                </SelectTrigger>
-                <SelectContent>
-                  {activeAccounts.map((a) => (
-                    <SelectItem key={a.id} value={a.id}>
-                      {accountLabel(a)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            {isCreditPurchase ? (
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="cardId">Cartão</Label>
+                <Select name="cardId">
+                  <SelectTrigger id="cardId" className="w-full">
+                    <SelectValue placeholder="Selecione" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {activeCards.map((c) => (
+                      <SelectItem key={c.id} value={c.id}>
+                        {c.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="accountId">{type === "transferencia" ? "De" : "Conta"}</Label>
+                <Select name="accountId" defaultValue={transaction?.account_id ?? defaultAccountId}>
+                  <SelectTrigger id="accountId" className="w-full">
+                    <SelectValue placeholder="Selecione" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {activeAccounts.map((a) => (
+                      <SelectItem key={a.id} value={a.id}>
+                        {accountLabel(a)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
 
             {type === "transferencia" ? (
               <div className="flex flex-col gap-2">
@@ -198,11 +257,26 @@ export function TransactionFormDialog({
             )}
           </div>
 
+          {isCreditPurchase ? (
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="installmentsTotal">Parcelas</Label>
+              <Input
+                id="installmentsTotal"
+                name="installmentsTotal"
+                type="number"
+                min="1"
+                max="48"
+                defaultValue={1}
+                required
+              />
+            </div>
+          ) : null}
+
           <div className="flex flex-col gap-2">
             <Label htmlFor="occurredOn">Data</Label>
             <Input
               id="occurredOn"
-              name="occurredOn"
+              name={isCreditPurchase ? "purchasedOn" : "occurredOn"}
               type="date"
               defaultValue={
                 transaction?.occurred_on ?? initialValues?.occurredOn ?? toLocalISODate(new Date())
@@ -212,21 +286,24 @@ export function TransactionFormDialog({
           </div>
 
           <div className="flex flex-col gap-2">
-            <Label htmlFor="description">Descrição (opcional)</Label>
+            <Label htmlFor="description">{isCreditPurchase ? "Descrição" : "Descrição (opcional)"}</Label>
             <Textarea
               id="description"
               name="description"
               defaultValue={transaction?.description ?? initialValues?.description ?? ""}
               rows={2}
+              required={isCreditPurchase}
             />
           </div>
 
-          <Button type="submit" disabled={pending || activeAccounts.length === 0} className="mt-2">
+          <Button type="submit" disabled={pending || noOptionsAvailable} className="mt-2">
             {pending ? "Salvando..." : "Salvar"}
           </Button>
-          {activeAccounts.length === 0 ? (
+          {noOptionsAvailable ? (
             <p className="text-center text-sm text-muted-foreground">
-              Cadastre uma conta antes de lançar movimentações.
+              {isCreditPurchase
+                ? "Cadastre um cartão antes de lançar uma compra no crédito."
+                : "Cadastre uma conta antes de lançar movimentações."}
             </p>
           ) : null}
         </form>
