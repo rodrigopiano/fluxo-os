@@ -8,6 +8,7 @@ import {
   HandCoins,
   TrendingUp,
   Target,
+  Tags,
   Sparkles,
   Settings,
 } from "lucide-react";
@@ -31,6 +32,7 @@ export const SECONDARY_NAV: NavItem[] = [
   { href: "/contas-a-receber", label: "Contas a receber", icon: HandCoins },
   { href: "/patrimonio", label: "Patrimônio", icon: TrendingUp },
   { href: "/metas", label: "Metas", icon: Target },
+  { href: "/categorias", label: "Categorias", icon: Tags },
 ];
 
 export const COMING_SOON_NAV: NavItem[] = [

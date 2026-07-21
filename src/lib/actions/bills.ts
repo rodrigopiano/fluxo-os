@@ -24,7 +24,8 @@ export async function upsertBillAction(
   const id = formData.get("id")?.toString();
   const direction = formData.get("direction")?.toString() as BillDirection;
   const description = formData.get("description")?.toString().trim();
-  const category = formData.get("category")?.toString() || null;
+  const categoryId = formData.get("categoryId")?.toString() || null;
+  const subcategoryId = formData.get("subcategoryId")?.toString() || null;
   const amount = Number(formData.get("amount"));
   const dueDate = formData.get("dueDate")?.toString();
 
@@ -38,7 +39,8 @@ export async function upsertBillAction(
     user_id: user.id,
     direction,
     description,
-    category,
+    category_id: categoryId,
+    subcategory_id: subcategoryId,
     amount,
     due_date: dueDate,
   };
@@ -88,7 +90,8 @@ export async function markBillPaidAction(
       account_id: accountId,
       type: direction === "pagar" ? "despesa" : "receita",
       amount: bill.amount,
-      category: bill.category,
+      category_id: bill.category_id,
+      subcategory_id: bill.subcategory_id,
       description: bill.description,
       occurred_on: paidOn,
     })

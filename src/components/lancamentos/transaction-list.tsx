@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { deleteTransactionAction } from "@/lib/actions/transactions";
 import { TransactionFormDialog } from "@/components/lancamentos/transaction-form-dialog";
-import type { Account, Card as CreditCard, Transaction } from "@/lib/types";
+import type { Account, Card as CreditCard, Category, Subcategory, Tag, Transaction } from "@/lib/types";
 
 const TYPE_META = {
   receita: { icon: ArrowUpCircle, color: "text-emerald-500", sign: "+" },
@@ -16,10 +16,16 @@ export function TransactionList({
   transactions,
   accounts,
   cards,
+  categories,
+  subcategories,
+  tags,
 }: {
   transactions: Transaction[];
   accounts: Account[];
   cards: CreditCard[];
+  categories: Category[];
+  subcategories: Subcategory[];
+  tags: Tag[];
 }) {
   const accountById = new Map(accounts.map((a) => [a.id, a]));
 
@@ -47,11 +53,16 @@ export function TransactionList({
               <Icon className={`size-5 shrink-0 ${meta.color}`} />
               <div className="min-w-0 flex-1">
                 <p className="truncate font-medium">
-                  {tx.description || tx.category || (tx.type === "transferencia" ? "Transferência" : "Lançamento")}
+                  {tx.description ||
+                    tx.category?.name ||
+                    (tx.type === "transferencia" ? "Transferência" : "Lançamento")}
                 </p>
                 <p className="truncate text-sm text-muted-foreground">
                   {account?.name}
-                  {destination ? ` → ${destination.name}` : ""} · {formatDate(tx.occurred_on)}
+                  {destination ? ` → ${destination.name}` : ""}
+                  {tx.subcategory?.name ? ` · ${tx.subcategory.name}` : tx.category?.name ? ` · ${tx.category.name}` : ""}
+                  {" · "}
+                  {formatDate(tx.occurred_on)}
                 </p>
               </div>
               <p className={`shrink-0 font-semibold ${meta.color}`}>
@@ -62,6 +73,9 @@ export function TransactionList({
                 <TransactionFormDialog
                   accounts={accounts}
                   cards={cards}
+                  categories={categories}
+                  subcategories={subcategories}
+                  tags={tags}
                   transaction={tx}
                   trigger={
                     <Button variant="ghost" size="sm">

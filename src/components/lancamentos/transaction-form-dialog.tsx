@@ -7,13 +7,17 @@ import { upsertTransactionAction, type FormState } from "@/lib/actions/transacti
 import { upsertCardPurchaseAction, type FormState as CardFormState } from "@/lib/actions/cards";
 import { accountLabel, toLocalISODate } from "@/lib/format";
 import {
-  CATEGORIES,
   type Account,
   type Card as CreditCard,
+  type Category,
   type ExtractedReceipt,
+  type Subcategory,
+  type Tag,
   type Transaction,
   type TransactionType,
 } from "@/lib/types";
+import { CategoryFieldSelect, SubcategoryFieldSelect } from "@/components/categorias/category-fields";
+import { TagToggleList } from "@/components/categorias/tag-toggle-list";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -42,6 +46,9 @@ type PaymentMethod = "debito" | "credito";
 export function TransactionFormDialog({
   accounts,
   cards,
+  categories,
+  subcategories,
+  tags,
   transaction,
   trigger,
   initialValues,
@@ -53,6 +60,9 @@ export function TransactionFormDialog({
 }: {
   accounts: Account[];
   cards: CreditCard[];
+  categories: Category[];
+  subcategories: Subcategory[];
+  tags: Tag[];
   transaction?: Transaction;
   trigger?: React.ReactNode;
   initialValues?: ExtractedReceipt;
@@ -68,8 +78,14 @@ export function TransactionFormDialog({
   const setOpen = isControlled ? (onOpenChangeProp ?? (() => {})) : setInternalOpen;
 
   const defaultType = transaction?.type ?? initialValues?.type ?? "despesa";
+  const defaultCategoryId = transaction?.category_id ?? initialValues?.categoryId ?? null;
+  const defaultSubcategoryId = transaction?.subcategory_id ?? initialValues?.subcategoryId ?? null;
+  const defaultTagIds = transaction?.tags?.map((t) => t.id) ?? [];
   const [type, setType] = useState<TransactionType>(defaultType);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("debito");
+  const [categoryId, setCategoryId] = useState<string | null>(defaultCategoryId);
+  const [subcategoryId, setSubcategoryId] = useState<string | null>(defaultSubcategoryId);
+  const [tagIds, setTagIds] = useState<string[]>(defaultTagIds);
   const [pending, setPending] = useState(false);
   const isEdit = Boolean(transaction);
   const isCreditPurchase = !isEdit && type === "despesa" && paymentMethod === "credito";
@@ -107,7 +123,6 @@ export function TransactionFormDialog({
 
   const activeAccounts = accounts.filter((a) => a.is_active);
   const activeCards = cards.filter((c) => c.is_active);
-  const categories = type === "transferencia" ? [] : CATEGORIES[type];
   const noOptionsAvailable = isCreditPurchase ? activeCards.length === 0 : activeAccounts.length === 0;
 
   return (
@@ -118,6 +133,9 @@ export function TransactionFormDialog({
         if (next) {
           setType(defaultType);
           setPaymentMethod("debito");
+          setCategoryId(defaultCategoryId);
+          setSubcategoryId(defaultSubcategoryId);
+          setTagIds(defaultTagIds);
         }
       }}
     >
@@ -140,7 +158,14 @@ export function TransactionFormDialog({
           {transaction ? <input type="hidden" name="id" value={transaction.id} /> : null}
           <input type="hidden" name="type" value={type} />
 
-          <Tabs value={type} onValueChange={(v) => setType(v as TransactionType)}>
+          <Tabs
+            value={type}
+            onValueChange={(v) => {
+              setType(v as TransactionType);
+              setCategoryId(null);
+              setSubcategoryId(null);
+            }}
+          >
             <TabsList className="w-full">
               <TabsTrigger value="receita" className="flex-1">
                 Receita
@@ -237,25 +262,42 @@ export function TransactionFormDialog({
               </div>
             ) : (
               <div className="flex flex-col gap-2">
-                <Label htmlFor="category">Categoria</Label>
-                <Select
-                  name="category"
-                  defaultValue={transaction?.category ?? initialValues?.category ?? undefined}
-                >
-                  <SelectTrigger id="category" className="w-full">
-                    <SelectValue placeholder="Selecione" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {categories.map((c) => (
-                      <SelectItem key={c} value={c}>
-                        {c}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Label htmlFor="categoryId">Categoria</Label>
+                <CategoryFieldSelect
+                  id="categoryId"
+                  categories={categories}
+                  kind={type}
+                  value={categoryId}
+                  onChange={(next) => {
+                    setCategoryId(next);
+                    setSubcategoryId(null);
+                  }}
+                />
+                <input type="hidden" name="categoryId" value={categoryId ?? ""} />
               </div>
             )}
           </div>
+
+          {type !== "transferencia" ? (
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="subcategoryId">Subcategoria</Label>
+              <SubcategoryFieldSelect
+                id="subcategoryId"
+                subcategories={subcategories}
+                categoryId={categoryId}
+                value={subcategoryId}
+                onChange={setSubcategoryId}
+              />
+              <input type="hidden" name="subcategoryId" value={subcategoryId ?? ""} />
+            </div>
+          ) : null}
+
+          {!isCreditPurchase && type !== "transferencia" ? (
+            <div className="flex flex-col gap-2">
+              <Label>Tags</Label>
+              <TagToggleList tags={tags} value={tagIds} onChange={setTagIds} />
+            </div>
+          ) : null}
 
           {isCreditPurchase ? (
             <div className="flex flex-col gap-2">

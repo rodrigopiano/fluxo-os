@@ -1,9 +1,41 @@
 export type TransactionType = "receita" | "despesa" | "transferencia";
 
+export type CategoryKind = Exclude<TransactionType, "transferencia">;
+
+export type Category = {
+  id: string;
+  user_id: string;
+  name: string;
+  kind: CategoryKind;
+  color: string;
+  position: number;
+  created_at: string;
+};
+
+export type Subcategory = {
+  id: string;
+  user_id: string;
+  category_id: string;
+  name: string;
+  position: number;
+  created_at: string;
+};
+
+export type Tag = {
+  id: string;
+  user_id: string;
+  name: string;
+  color: string;
+  created_at: string;
+};
+
 export type ExtractedReceipt = {
   amount: number | null;
   description: string | null;
   category: string | null;
+  subcategory: string | null;
+  categoryId: string | null;
+  subcategoryId: string | null;
   type: Exclude<TransactionType, "transferencia">;
   occurredOn: string | null;
 };
@@ -19,6 +51,9 @@ export type Account = {
   created_at: string;
 };
 
+export type CategoryRef = { id: string; name: string; color: string } | null;
+export type SubcategoryRef = { id: string; name: string } | null;
+
 export type Transaction = {
   id: string;
   user_id: string;
@@ -26,7 +61,11 @@ export type Transaction = {
   destination_account_id: string | null;
   type: TransactionType;
   amount: number;
-  category: string | null;
+  category_id: string | null;
+  subcategory_id: string | null;
+  category?: CategoryRef;
+  subcategory?: SubcategoryRef;
+  tags?: Tag[];
   description: string | null;
   occurred_on: string;
   created_at: string;
@@ -50,24 +89,15 @@ export type CardPurchase = {
   user_id: string;
   card_id: string;
   description: string;
-  category: string | null;
+  category_id: string | null;
+  subcategory_id: string | null;
+  category?: CategoryRef;
+  subcategory?: SubcategoryRef;
   amount: number;
   installments_total: number;
   purchased_on: string;
   created_at: string;
 };
-
-export const CARD_PURCHASE_CATEGORIES = [
-  "Moradia",
-  "Alimentação",
-  "Transporte",
-  "Saúde",
-  "Assinaturas",
-  "Lazer",
-  "Educação",
-  "Compras",
-  "Outros",
-];
 
 export type BillDirection = "pagar" | "receber";
 export type BillStatus = "pendente" | "pago";
@@ -77,7 +107,10 @@ export type Bill = {
   user_id: string;
   direction: BillDirection;
   description: string;
-  category: string | null;
+  category_id: string | null;
+  subcategory_id: string | null;
+  category?: CategoryRef;
+  subcategory?: SubcategoryRef;
   amount: number;
   due_date: string;
   status: BillStatus;
@@ -85,20 +118,6 @@ export type Bill = {
   account_id: string | null;
   transaction_id: string | null;
   created_at: string;
-};
-
-export const BILL_CATEGORIES: Record<BillDirection, string[]> = {
-  pagar: [
-    "Água",
-    "Luz",
-    "Internet",
-    "Aluguel",
-    "Impostos",
-    "Assinaturas",
-    "Parcelamentos",
-    "Outros",
-  ],
-  receber: ["Comissão", "Salário", "Freela", "Cliente", "Aluguel", "Dividendos", "Outros"],
 };
 
 export type AssetCategory = "investimento" | "imovel" | "veiculo" | "consorcio" | "empresa" | "outro";
@@ -144,17 +163,3 @@ export const INSTITUTIONS = [
   "Outro",
 ] as const;
 
-export const CATEGORIES: Record<Exclude<TransactionType, "transferencia">, string[]> = {
-  receita: ["Salário", "Freelance", "Comissão", "Aluguel recebido", "Dividendos", "Outros"],
-  despesa: [
-    "Moradia",
-    "Alimentação",
-    "Transporte",
-    "Saúde",
-    "Assinaturas",
-    "Lazer",
-    "Educação",
-    "Impostos",
-    "Outros",
-  ],
-};

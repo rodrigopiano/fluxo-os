@@ -85,7 +85,8 @@ export async function upsertCardPurchaseAction(
   const id = formData.get("id")?.toString();
   const cardId = formData.get("cardId")?.toString();
   const description = formData.get("description")?.toString().trim();
-  const category = formData.get("category")?.toString() || null;
+  const categoryId = formData.get("categoryId")?.toString() || null;
+  const subcategoryId = formData.get("subcategoryId")?.toString() || null;
   const amount = Number(formData.get("amount"));
   const installmentsTotal = Number(formData.get("installmentsTotal") || 1);
   const purchasedOn = formData.get("purchasedOn")?.toString();
@@ -104,7 +105,8 @@ export async function upsertCardPurchaseAction(
     user_id: user.id,
     card_id: cardId,
     description,
-    category,
+    category_id: categoryId,
+    subcategory_id: subcategoryId,
     amount,
     installments_total: installmentsTotal,
     purchased_on: purchasedOn,

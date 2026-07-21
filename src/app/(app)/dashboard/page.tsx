@@ -10,7 +10,8 @@ import { EmergencyReserveCard } from "@/components/dashboard/emergency-reserve-c
 import { GoalsSummaryCard } from "@/components/dashboard/goals-summary-card";
 import { TransactionList } from "@/components/lancamentos/transaction-list";
 import { QuickAddButton } from "@/components/quick-add-button";
-import type { Account, Asset, Bill, Card, Goal, Transaction } from "@/lib/types";
+import { withTransactionTags } from "@/lib/categories";
+import type { Account, Asset, Bill, Card, Category, Goal, Subcategory, Tag } from "@/lib/types";
 
 function greeting() {
   const hour = nowInBrazil().getHours();
@@ -33,12 +34,17 @@ export default async function DashboardPage() {
     { data: assets },
     { data: goals },
     { data: cards },
+    { data: categories },
+    { data: subcategories },
+    { data: tags },
   ] = await Promise.all([
     supabase.from("profiles").select("full_name").eq("id", user!.id).single(),
     supabase.from("accounts").select("*").eq("user_id", user!.id),
     supabase
       .from("transactions")
-      .select("*")
+      .select(
+        "*, category:categories(id,name,color), subcategory:subcategories(id,name), transaction_tags(tag:tags(id,name,color))",
+      )
       .eq("user_id", user!.id)
       .order("occurred_on", { ascending: false })
       .order("created_at", { ascending: false }),
@@ -51,14 +57,20 @@ export default async function DashboardPage() {
     supabase.from("assets").select("*").eq("user_id", user!.id),
     supabase.from("goals").select("*").eq("user_id", user!.id),
     supabase.from("cards").select("*").eq("user_id", user!.id),
+    supabase.from("categories").select("*").eq("user_id", user!.id).order("position"),
+    supabase.from("subcategories").select("*").eq("user_id", user!.id).order("position"),
+    supabase.from("tags").select("*").eq("user_id", user!.id).order("created_at"),
   ]);
 
   const accountList = (accounts ?? []) as Account[];
-  const transactionList = (transactions ?? []) as Transaction[];
+  const transactionList = withTransactionTags(transactions ?? []);
   const billList = (bills ?? []) as Bill[];
   const assetList = (assets ?? []) as Asset[];
   const goalList = (goals ?? []) as Goal[];
   const cardList = (cards ?? []) as Card[];
+  const categoryList = (categories ?? []) as Category[];
+  const subcategoryList = (subcategories ?? []) as Subcategory[];
+  const tagList = (tags ?? []) as Tag[];
   const emergencyGoal = goalList.find((g) => g.is_emergency_reserve);
   const otherGoals = goalList.filter((g) => !g.is_emergency_reserve);
   const firstName = (profile?.full_name || user?.email || "").split(" ")[0];
@@ -111,10 +123,19 @@ export default async function DashboardPage() {
           transactions={transactionList.slice(0, 5)}
           accounts={accountList}
           cards={cardList}
+          categories={categoryList}
+          subcategories={subcategoryList}
+          tags={tagList}
         />
       </div>
 
-      <QuickAddButton accounts={accountList} cards={cardList} />
+      <QuickAddButton
+        accounts={accountList}
+        cards={cardList}
+        categories={categoryList}
+        subcategories={subcategoryList}
+        tags={tagList}
+      />
     </div>
   );
 }

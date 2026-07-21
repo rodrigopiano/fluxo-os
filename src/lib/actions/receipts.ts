@@ -1,10 +1,21 @@
 "use server";
 
-import { CATEGORIES, type ExtractedReceipt } from "@/lib/types";
+import { createClient } from "@/lib/supabase/server";
+import type { Category, CategoryKind, ExtractedReceipt, Subcategory } from "@/lib/types";
 
 export type ReceiptState = { error: string | null; data?: ExtractedReceipt[] };
 
 const GEMINI_MODEL = "gemini-2.5-flash";
+
+function describeCategories(categories: Category[], subcategories: Subcategory[], kind: CategoryKind) {
+  return categories
+    .filter((c) => c.kind === kind)
+    .map((c) => {
+      const subs = subcategories.filter((s) => s.category_id === c.id).map((s) => s.name);
+      return subs.length > 0 ? `${c.name} (${subs.join(", ")})` : c.name;
+    })
+    .join("; ");
+}
 
 export async function extractReceiptAction(formData: FormData): Promise<ReceiptState> {
   const file = formData.get("file");
@@ -21,9 +32,23 @@ export async function extractReceiptAction(formData: FormData): Promise<ReceiptS
     return { error: "Escaneamento de comprovantes ainda não está configurado." };
   }
 
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Sessão expirada. Faça login novamente." };
+
+  const [{ data: categoriesData }, { data: subcategoriesData }] = await Promise.all([
+    supabase.from("categories").select("*").eq("user_id", user.id).order("position"),
+    supabase.from("subcategories").select("*").eq("user_id", user.id).order("position"),
+  ]);
+  const categories = (categoriesData ?? []) as Category[];
+  const subcategories = (subcategoriesData ?? []) as Subcategory[];
+
   const buffer = Buffer.from(await file.arrayBuffer());
   const base64 = buffer.toString("base64");
-  const categories = CATEGORIES.despesa.join(", ");
+  const despesaCategories = describeCategories(categories, subcategories, "despesa");
+  const receitaCategories = describeCategories(categories, subcategories, "receita");
 
   const prompt =
     "Você extrai dados de comprovantes financeiros brasileiros (PIX, boleto, nota fiscal, recibo) a partir de uma imagem. " +
@@ -32,9 +57,12 @@ export async function extractReceiptAction(formData: FormData): Promise<ReceiptS
     "extraia como uma entrada só. " +
     'Responda só com um objeto JSON com exatamente estas chaves: "data" (formato YYYY-MM-DD, use o ano atual se não ' +
     'estiver visível, mesma data para todos os itens), "itens" (array de objetos, cada um com "valor" — número, sem ' +
-    'símbolo de moeda —, "descricao" — nome do produto, estabelecimento ou pessoa —, ' +
-    `"categoria" — escolha exatamente uma destas opções: ${categories} —, ` +
+    'símbolo de moeda —, "descricao" — nome do produto, estabelecimento ou pessoa —, "categoria" — escolha exatamente ' +
+    'uma categoria da lista abaixo correspondente ao tipo do item —, "subcategoria" — se a categoria escolhida tiver ' +
+    'subcategorias entre parênteses na lista, escolha exatamente uma delas, senão use null —, ' +
     '"tipo" — "despesa" ou "receita", use "despesa" se não tiver certeza). ' +
+    `Categorias de despesa disponíveis (com subcategorias entre parênteses quando houver): ${despesaCategories}. ` +
+    `Categorias de receita disponíveis: ${receitaCategories}. ` +
     "Se não conseguir identificar um campo, use null. Se não conseguir separar itens, retorne um array com uma única entrada.";
 
   let response: Response;
@@ -82,14 +110,22 @@ export async function extractReceiptAction(formData: FormData): Promise<ReceiptS
 
     const items: ExtractedReceipt[] = rawItems.map((item: Record<string, unknown>) => {
       const type = item.tipo === "receita" ? "receita" : "despesa";
-      const category = CATEGORIES[type].includes(item.categoria as string)
-        ? (item.categoria as string)
-        : null;
+      const category = categories.find(
+        (c) => c.kind === type && c.name === (item.categoria as string),
+      );
+      const subcategory = category
+        ? subcategories.find(
+            (s) => s.category_id === category.id && s.name === (item.subcategoria as string),
+          )
+        : undefined;
 
       return {
         amount: typeof item.valor === "number" ? item.valor : null,
         description: typeof item.descricao === "string" ? item.descricao : null,
-        category,
+        category: category?.name ?? null,
+        subcategory: subcategory?.name ?? null,
+        categoryId: category?.id ?? null,
+        subcategoryId: subcategory?.id ?? null,
         type,
         occurredOn: sharedDate,
       };

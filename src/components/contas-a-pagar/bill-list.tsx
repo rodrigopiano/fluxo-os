@@ -11,16 +11,20 @@ import { BILL_FILTERS, isOverdue, matchesFilter, type BillFilter } from "@/lib/b
 import { markBillPendingAction, deleteBillAction } from "@/lib/actions/bills";
 import { BillFormDialog } from "@/components/contas-a-pagar/bill-form-dialog";
 import { MarkPaidDialog } from "@/components/contas-a-pagar/mark-paid-dialog";
-import type { Account, Bill, BillDirection } from "@/lib/types";
+import type { Account, Bill, BillDirection, Category, Subcategory } from "@/lib/types";
 
 export function BillList({
   bills,
   direction,
   accounts,
+  categories,
+  subcategories,
 }: {
   bills: Bill[];
   direction: BillDirection;
   accounts: Account[];
+  categories: Category[];
+  subcategories: Subcategory[];
 }) {
   const [filter, setFilter] = useState<BillFilter>("todas");
   const filtered = bills.filter((b) => matchesFilter(b, filter));
@@ -52,7 +56,8 @@ export function BillList({
                   <div className="min-w-0 flex-1">
                     <p className="truncate font-medium">{bill.description}</p>
                     <p className="truncate text-sm text-muted-foreground">
-                      {bill.category ?? "Sem categoria"} · vence {formatDate(bill.due_date)}
+                      {bill.subcategory?.name ?? bill.category?.name ?? "Sem categoria"} · vence{" "}
+                      {formatDate(bill.due_date)}
                     </p>
                   </div>
                   {paid ? (
@@ -62,7 +67,12 @@ export function BillList({
                   ) : null}
                   <p className="shrink-0 font-semibold">{formatCurrency(bill.amount)}</p>
                   <div className="flex shrink-0 items-center gap-1">
-                    <BillFormDialog direction={direction} bill={bill} />
+                    <BillFormDialog
+                      direction={direction}
+                      bill={bill}
+                      categories={categories}
+                      subcategories={subcategories}
+                    />
                     {paid ? (
                       <form action={markBillPendingAction}>
                         <input type="hidden" name="id" value={bill.id} />

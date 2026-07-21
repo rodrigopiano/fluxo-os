@@ -5,17 +5,11 @@ import { Plus, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import { upsertBillAction, type FormState } from "@/lib/actions/bills";
 import { toLocalISODate } from "@/lib/format";
-import { BILL_CATEGORIES, type Bill, type BillDirection } from "@/lib/types";
+import type { Bill, BillDirection, Category, Subcategory } from "@/lib/types";
+import { CategoryFieldSelect, SubcategoryFieldSelect } from "@/components/categorias/category-fields";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import {
   Dialog,
   DialogContent,
@@ -29,14 +23,20 @@ const initialState: FormState = { error: null };
 export function BillFormDialog({
   direction,
   bill,
+  categories,
+  subcategories,
 }: {
   direction: BillDirection;
   bill?: Bill;
+  categories: Category[];
+  subcategories: Subcategory[];
 }) {
   const [open, setOpen] = useState(false);
   const [pending, setPending] = useState(false);
+  const [categoryId, setCategoryId] = useState<string | null>(bill?.category_id ?? null);
+  const [subcategoryId, setSubcategoryId] = useState<string | null>(bill?.subcategory_id ?? null);
   const isEdit = Boolean(bill);
-  const categories = BILL_CATEGORIES[direction];
+  const kind = direction === "pagar" ? "despesa" : "receita";
   const noun = direction === "pagar" ? "conta" : "recebimento";
 
   async function handleSubmit(formData: FormData) {
@@ -52,7 +52,16 @@ export function BillFormDialog({
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog
+      open={open}
+      onOpenChange={(next) => {
+        setOpen(next);
+        if (next) {
+          setCategoryId(bill?.category_id ?? null);
+          setSubcategoryId(bill?.subcategory_id ?? null);
+        }
+      }}
+    >
       <DialogTrigger asChild>
         {isEdit ? (
           <Button variant="ghost" size="icon" className="size-8">
@@ -116,20 +125,32 @@ export function BillFormDialog({
             </div>
           </div>
 
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="category">Categoria</Label>
-            <Select name="category" defaultValue={bill?.category ?? undefined}>
-              <SelectTrigger id="category" className="w-full">
-                <SelectValue placeholder="Selecione" />
-              </SelectTrigger>
-              <SelectContent>
-                {categories.map((c) => (
-                  <SelectItem key={c} value={c}>
-                    {c}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="categoryId">Categoria</Label>
+              <CategoryFieldSelect
+                id="categoryId"
+                categories={categories}
+                kind={kind}
+                value={categoryId}
+                onChange={(next) => {
+                  setCategoryId(next);
+                  setSubcategoryId(null);
+                }}
+              />
+              <input type="hidden" name="categoryId" value={categoryId ?? ""} />
+            </div>
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="subcategoryId">Subcategoria</Label>
+              <SubcategoryFieldSelect
+                id="subcategoryId"
+                subcategories={subcategories}
+                categoryId={categoryId}
+                value={subcategoryId}
+                onChange={setSubcategoryId}
+              />
+              <input type="hidden" name="subcategoryId" value={subcategoryId ?? ""} />
+            </div>
           </div>
 
           <Button type="submit" disabled={pending} className="mt-2">

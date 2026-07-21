@@ -5,7 +5,8 @@ import { Plus } from "lucide-react";
 import { toast } from "sonner";
 import { upsertCardPurchaseAction, type FormState } from "@/lib/actions/cards";
 import { toLocalISODate } from "@/lib/format";
-import { CARD_PURCHASE_CATEGORIES, type Card, type CardPurchase } from "@/lib/types";
+import type { Card, CardPurchase, Category, Subcategory } from "@/lib/types";
+import { CategoryFieldSelect, SubcategoryFieldSelect } from "@/components/categorias/category-fields";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -28,17 +29,23 @@ const initialState: FormState = { error: null };
 
 export function PurchaseFormDialog({
   cards,
+  categories,
+  subcategories,
   purchase,
   defaultCardId,
   trigger,
 }: {
   cards: Card[];
+  categories: Category[];
+  subcategories: Subcategory[];
   purchase?: CardPurchase;
   defaultCardId?: string;
   trigger?: React.ReactNode;
 }) {
   const [open, setOpen] = useState(false);
   const [pending, setPending] = useState(false);
+  const [categoryId, setCategoryId] = useState<string | null>(purchase?.category_id ?? null);
+  const [subcategoryId, setSubcategoryId] = useState<string | null>(purchase?.subcategory_id ?? null);
   const isEdit = Boolean(purchase);
   const activeCards = cards.filter((c) => c.is_active);
 
@@ -55,7 +62,16 @@ export function PurchaseFormDialog({
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog
+      open={open}
+      onOpenChange={(next) => {
+        setOpen(next);
+        if (next) {
+          setCategoryId(purchase?.category_id ?? null);
+          setSubcategoryId(purchase?.subcategory_id ?? null);
+        }
+      }}
+    >
       <DialogTrigger asChild>
         {trigger ?? (
           <Button className="gap-2">
@@ -126,20 +142,32 @@ export function PurchaseFormDialog({
             </div>
           </div>
 
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="category">Categoria</Label>
-            <Select name="category" defaultValue={purchase?.category ?? undefined}>
-              <SelectTrigger id="category" className="w-full">
-                <SelectValue placeholder="Selecione" />
-              </SelectTrigger>
-              <SelectContent>
-                {CARD_PURCHASE_CATEGORIES.map((c) => (
-                  <SelectItem key={c} value={c}>
-                    {c}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="categoryId">Categoria</Label>
+              <CategoryFieldSelect
+                id="categoryId"
+                categories={categories}
+                kind="despesa"
+                value={categoryId}
+                onChange={(next) => {
+                  setCategoryId(next);
+                  setSubcategoryId(null);
+                }}
+              />
+              <input type="hidden" name="categoryId" value={categoryId ?? ""} />
+            </div>
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="subcategoryId">Subcategoria</Label>
+              <SubcategoryFieldSelect
+                id="subcategoryId"
+                subcategories={subcategories}
+                categoryId={categoryId}
+                value={subcategoryId}
+                onChange={setSubcategoryId}
+              />
+              <input type="hidden" name="subcategoryId" value={subcategoryId ?? ""} />
+            </div>
           </div>
 
           <div className="flex flex-col gap-2">

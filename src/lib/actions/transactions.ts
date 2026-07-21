@@ -21,7 +21,9 @@ export async function upsertTransactionAction(
   const accountId = formData.get("accountId")?.toString();
   const destinationAccountId = formData.get("destinationAccountId")?.toString() || null;
   const amount = Number(formData.get("amount"));
-  const category = formData.get("category")?.toString() || null;
+  const categoryId = formData.get("categoryId")?.toString() || null;
+  const subcategoryId = formData.get("subcategoryId")?.toString() || null;
+  const tagIds = formData.getAll("tagIds").map((v) => v.toString());
   const description = formData.get("description")?.toString() || null;
   const occurredOn = formData.get("occurredOn")?.toString();
 
@@ -43,16 +45,30 @@ export async function upsertTransactionAction(
     destination_account_id: type === "transferencia" ? destinationAccountId : null,
     type,
     amount,
-    category: type === "transferencia" ? null : category,
+    category_id: type === "transferencia" ? null : categoryId,
+    subcategory_id: type === "transferencia" ? null : subcategoryId,
     description,
     occurred_on: occurredOn,
   };
 
-  const { error } = id
-    ? await supabase.from("transactions").update(payload).eq("id", id).eq("user_id", user.id)
-    : await supabase.from("transactions").insert(payload);
+  const { data: saved, error } = id
+    ? await supabase
+        .from("transactions")
+        .update(payload)
+        .eq("id", id)
+        .eq("user_id", user.id)
+        .select("id")
+        .single()
+    : await supabase.from("transactions").insert(payload).select("id").single();
 
-  if (error) return { error: "Não foi possível salvar o lançamento." };
+  if (error || !saved) return { error: "Não foi possível salvar o lançamento." };
+
+  await supabase.from("transaction_tags").delete().eq("transaction_id", saved.id);
+  if (type !== "transferencia" && tagIds.length > 0) {
+    await supabase
+      .from("transaction_tags")
+      .insert(tagIds.map((tagId) => ({ transaction_id: saved.id, tag_id: tagId })));
+  }
 
   revalidatePath("/lancamentos");
   revalidatePath("/dashboard");

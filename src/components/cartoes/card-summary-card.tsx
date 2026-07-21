@@ -6,16 +6,20 @@ import { availableLimit, currentInvoiceTotal, nextDueDate } from "@/lib/cards";
 import { toggleCardActiveAction } from "@/lib/actions/cards";
 import { CardFormDialog } from "@/components/cartoes/card-form-dialog";
 import { PurchaseFormDialog } from "@/components/cartoes/purchase-form-dialog";
-import type { Card, CardPurchase } from "@/lib/types";
+import type { Card, CardPurchase, Category, Subcategory } from "@/lib/types";
 
 export function CardSummaryCard({
   card,
   allCards,
   purchases,
+  categories,
+  subcategories,
 }: {
   card: Card;
   allCards: Card[];
   purchases: CardPurchase[];
+  categories: Category[];
+  subcategories: Subcategory[];
 }) {
   const available = availableLimit(card, purchases);
   const invoice = currentInvoiceTotal(card, purchases);
@@ -68,6 +72,8 @@ export function CardSummaryCard({
 
         <PurchaseFormDialog
           cards={allCards}
+          categories={categories}
+          subcategories={subcategories}
           defaultCardId={card.id}
           trigger={
             <Button variant="outline" size="sm" className="self-start">
