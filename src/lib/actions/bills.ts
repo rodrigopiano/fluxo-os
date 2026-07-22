@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { toLocalISODate } from "@/lib/format";
+import { addOneMonth, toLocalISODate } from "@/lib/format";
 import type { BillDirection } from "@/lib/types";
 
 export type FormState = { error: string | null };
@@ -28,6 +28,7 @@ export async function upsertBillAction(
   const subcategoryId = formData.get("subcategoryId")?.toString() || null;
   const amount = Number(formData.get("amount"));
   const dueDate = formData.get("dueDate")?.toString();
+  const isRecurring = formData.get("isRecurring") === "on";
 
   if (!description) return { error: "Informe uma descrição." };
   if (!dueDate) return { error: "Informe a data de vencimento." };
@@ -43,6 +44,7 @@ export async function upsertBillAction(
     subcategory_id: subcategoryId,
     amount,
     due_date: dueDate,
+    is_recurring: isRecurring,
   };
 
   const { error } = id
@@ -114,6 +116,19 @@ export async function markBillPaidAction(
     .eq("user_id", user.id);
 
   if (updateError) return { error: "Não foi possível marcar como paga." };
+
+  if (bill.is_recurring) {
+    await supabase.from("bills").insert({
+      user_id: user.id,
+      direction: bill.direction,
+      description: bill.description,
+      category_id: bill.category_id,
+      subcategory_id: bill.subcategory_id,
+      amount: bill.amount,
+      due_date: addOneMonth(bill.due_date),
+      is_recurring: true,
+    });
+  }
 
   revalidatePath(pathFor(direction));
   revalidatePath("/dashboard");

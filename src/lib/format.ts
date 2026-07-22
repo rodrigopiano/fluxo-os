@@ -51,6 +51,12 @@ export function toLocalISODate(date: Date): string {
   return `${year}-${month}-${day}`;
 }
 
+export function addOneMonth(dateStr: string): string {
+  const [year, month, day] = dateStr.split("-").map(Number);
+  const lastDayNextMonth = new Date(year, month + 1, 0).getDate();
+  return toLocalISODate(new Date(year, month, Math.min(day, lastDayNextMonth)));
+}
+
 export function monthRange(reference: Date = nowInBrazil()) {
   const start = new Date(reference.getFullYear(), reference.getMonth(), 1);
   const end = new Date(reference.getFullYear(), reference.getMonth() + 1, 0);

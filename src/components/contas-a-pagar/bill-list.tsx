@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { RotateCcw, Trash2 } from "lucide-react";
+import { Repeat, RotateCcw, Trash2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -54,7 +54,12 @@ export function BillList({
               <Card key={bill.id}>
                 <CardContent className="flex items-center gap-3">
                   <div className="min-w-0 flex-1">
-                    <p className="truncate font-medium">{bill.description}</p>
+                    <p className="flex items-center gap-1.5 truncate font-medium">
+                      {bill.description}
+                      {bill.is_recurring ? (
+                        <Repeat className="size-3.5 shrink-0 text-muted-foreground" />
+                      ) : null}
+                    </p>
                     <p className="truncate text-sm text-muted-foreground">
                       {bill.subcategory?.name ?? bill.category?.name ?? "Sem categoria"} · vence{" "}
                       {formatDate(bill.due_date)}

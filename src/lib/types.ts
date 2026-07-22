@@ -117,6 +117,7 @@ export type Bill = {
   paid_on: string | null;
   account_id: string | null;
   transaction_id: string | null;
+  is_recurring: boolean;
   created_at: string;
 };
 

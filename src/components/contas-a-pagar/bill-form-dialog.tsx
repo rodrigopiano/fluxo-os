@@ -8,6 +8,7 @@ import { toLocalISODate } from "@/lib/format";
 import type { Bill, BillDirection, Category, Subcategory } from "@/lib/types";
 import { CategoryFieldSelect, SubcategoryFieldSelect } from "@/components/categorias/category-fields";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -151,6 +152,17 @@ export function BillFormDialog({
               />
               <input type="hidden" name="subcategoryId" value={subcategoryId ?? ""} />
             </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Checkbox
+              id="isRecurring"
+              name="isRecurring"
+              defaultChecked={bill?.is_recurring}
+            />
+            <Label htmlFor="isRecurring" className="font-normal">
+              Repetir todo mês (cria a próxima automaticamente ao marcar como paga)
+            </Label>
           </div>
 
           <Button type="submit" disabled={pending} className="mt-2">
