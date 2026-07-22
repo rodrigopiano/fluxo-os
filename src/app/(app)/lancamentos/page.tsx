@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { TransactionFormDialog } from "@/components/lancamentos/transaction-form-dialog";
 import { TransactionList } from "@/components/lancamentos/transaction-list";
 import { ScanReceiptButton } from "@/components/lancamentos/scan-receipt-button";
+import { ImportStatementButton } from "@/components/lancamentos/import-statement-button";
 import { withTransactionTags } from "@/lib/categories";
 import type { Account, Card, Category, Subcategory, Tag } from "@/lib/types";
 
@@ -46,6 +47,11 @@ export default async function LancamentosPage() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-semibold tracking-tight">Lançamentos</h1>
         <div className="flex gap-2">
+          <ImportStatementButton
+            accounts={accountList}
+            categories={categoryList}
+            subcategories={subcategoryList}
+          />
           <ScanReceiptButton
             accounts={accountList}
             cards={cardList}

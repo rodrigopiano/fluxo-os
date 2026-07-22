@@ -40,6 +40,17 @@ export type ExtractedReceipt = {
   occurredOn: string | null;
 };
 
+export type ImportRow = {
+  externalId: string;
+  occurredOn: string;
+  amount: number;
+  type: Exclude<TransactionType, "transferencia">;
+  description: string;
+  categoryId: string | null;
+  subcategoryId: string | null;
+  isDuplicate: boolean;
+};
+
 export type Account = {
   id: string;
   user_id: string;
@@ -68,6 +79,7 @@ export type Transaction = {
   tags?: Tag[];
   description: string | null;
   occurred_on: string;
+  external_id: string | null;
   created_at: string;
 };
 

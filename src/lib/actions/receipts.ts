@@ -1,21 +1,12 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
-import type { Category, CategoryKind, ExtractedReceipt, Subcategory } from "@/lib/types";
+import { describeCategories } from "@/lib/categories";
+import type { Category, ExtractedReceipt, Subcategory } from "@/lib/types";
 
 export type ReceiptState = { error: string | null; data?: ExtractedReceipt[] };
 
 const GEMINI_MODEL = "gemini-2.5-flash";
-
-function describeCategories(categories: Category[], subcategories: Subcategory[], kind: CategoryKind) {
-  return categories
-    .filter((c) => c.kind === kind)
-    .map((c) => {
-      const subs = subcategories.filter((s) => s.category_id === c.id).map((s) => s.name);
-      return subs.length > 0 ? `${c.name} (${subs.join(", ")})` : c.name;
-    })
-    .join("; ");
-}
 
 export async function extractReceiptAction(formData: FormData): Promise<ReceiptState> {
   const file = formData.get("file");
